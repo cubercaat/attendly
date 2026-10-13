@@ -5,8 +5,8 @@ O'qituvchi ekranda **har 3 soniyada yangilanadigan** QR ko'rsatadi; talaba uni
 skanerlaydi, telefon joylashuvni va shaxsni tasdiqlaydi — shundan keyingina
 davomat yoziladi.
 
-**Demo sahifa:** https://cubercaat.github.io/attendly/ — QR aylanishini va
-aldash urinishlarini brauzerda sinab ko'rasiz (statik, backend kerak emas).
+**Jonli demo (ro'yxatdan o'tish shart emas):** https://cubercaat.github.io/attendly/login.html
+— admin, o'qituvchi va talaba uchun alohida panellar, login/parol kirish sahifasida tayyor.
 
 Arxitektura va baza sxemasi: **[ARCHITECTURE.md](ARCHITECTURE.md)**
 

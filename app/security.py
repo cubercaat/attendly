@@ -168,7 +168,7 @@ def device_hash(raw_fingerprint: Optional[str], user_agent: Optional[str]) -> st
 
 
 def client_ip(headers, fallback: Optional[str]) -> Optional[str]:
-    fwd = headers.get("x-forwarded-for")
+    fwd = headers.get("x-forwarded-for") if settings.trust_proxy else None
     if fwd:
         return fwd.split(",")[0].strip()
     return fallback

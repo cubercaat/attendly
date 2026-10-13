@@ -19,6 +19,11 @@ log = logging.getLogger("attendly")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.secret_key == "dev-secret-change-me" and not settings.is_local:
+        raise RuntimeError(
+            "SECRET_KEY o'zgartirilmagan — produksiyada ishga tushmaydi. "
+            "openssl rand -hex 32 bilan yangi kalit yarating."
+        )
     await init_models()
     log.info("%s ishga tushdi — %s", settings.app_name, settings.base_url)
     log.info("WebAuthn RP ID: %s", settings.rp_id)

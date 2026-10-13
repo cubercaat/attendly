@@ -53,7 +53,7 @@ railway variables \
   --set "BOT_USERNAME=BOT_USERNAME_ETSIZ" \
   --set "SUPER_ADMIN_IDS=6616758518" \
   --set "TZ=Asia/Tashkent" \
-  --set "DEMO_MODE=true"
+  --set "DEMO_MODE=true" \n  --set "TRUST_PROXY=true"
 ```
 
 > `BASE_URL` — 4-qadamdagi domen, oldiga `https://`.

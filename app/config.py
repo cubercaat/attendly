@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     bot_username: str = "AttendlyBot"
     super_admin_ids: str = ""
 
+    # Reverse proxy (Caddy/Railway) ortida true qiling — aks holda X-Forwarded-For e'tiborsiz
+    trust_proxy: bool = False
+
     qr_rotate_seconds: int = 3
     qr_accept_windows: int = 4
 
@@ -36,6 +39,10 @@ class Settings(BaseSettings):
     demo_mode: bool = False
     demo_skip_geofence: bool = False
     demo_skip_biometry: bool = False
+
+    @property
+    def is_local(self) -> bool:
+        return self.rp_id in ("localhost", "127.0.0.1")
 
     @property
     def tzinfo(self) -> ZoneInfo:

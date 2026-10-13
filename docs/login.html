@@ -1,0 +1,15 @@
+<!doctype html><html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Attendly — Kirish</title><link rel="stylesheet" href="assets/app.css"></head><body>
+<div class="banner">DEMO — ro'yxatdan o'tish shart emas. Login va parol tayyor, "Kirish" tugmasini bosing.</div>
+<div class="hero"><a href="index.html" class="sm">← Bosh sahifa</a><h1 style="margin-top:10px">Attendly demo</h1>
+<p class="muted">Har bir rol uchun alohida panel. O'qituvchi va talabani <b>ikki alohida tabda</b> oching: o'qituvchi QR ni ko'rsatadi, talaba uni skanerlaydi — jonli ishlaydi.</p>
+<div class="roles" id="roles"></div>
+<form class="card" id="f" style="margin-top:18px"><h3>Boshqa hisob bilan kirish</h3><div class="row"><label>Login<input id="l" autocomplete="username"></label><label>Parol<input id="p" type="password" autocomplete="current-password"></label><button class="btn p">Kirish</button></div><p class="sm muted" id="err" style="margin:0"></p></form></div>
+<script src="assets/demo.js"></script><script>
+const R=[['super_admin','Admin panel','admin','admin123',"Guruh, xona, fan, foydalanuvchi, taklif havolalari, hisobot, audit log"],
+['teacher',"O'qituvchi paneli",'teacher','teacher123',"Dars ochish, aylanuvchi QR, jonli ro'yxat, bekor qilish"],
+['student','Talaba paneli','student','student123',"QR skanerlash, GPS, passkey/yuz, davomat tarixi"]];
+$('#roles').innerHTML=R.map(([r,t,l,p,d],i)=>`<div class="card"><div class="ico">${'ATS'[i]}</div><h2>${t}</h2><p class="sm muted">${d}</p><p class="sm">Login: <span class="cred">${l}</span><br>Parol: <span class="cred">${p}</span></p><button class="btn p" data-i="${i}">Kirish →</button></div>`).join('');
+function go(l,p){const u=login(l,p);if(!u){$('#err').textContent="Login yoki parol noto'g'ri";return}location.href=HOME[u.role]+'/index.html'}
+$$('#roles .btn').forEach(b=>b.onclick=()=>go(R[b.dataset.i][2],R[b.dataset.i][3]));
+$('#f').onsubmit=e=>{e.preventDefault();go($('#l').value,$('#p').value)};
+</script></body></html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1f6fd0">
+<meta name="theme-color" content="#0f6b5f">
 <meta name="description" content="Attendly — TTPU davomat tizimi: har 3 soniyada yangilanadigan QR, GPS geofence, passkey va yuz tanish.">
 <title>Attendly</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,7 +15,7 @@
   --bg:#f6f6f4; --surface:#ffffff; --sunken:#f0efec;
   --ink:#111312; --ink-2:#4e524f; --muted:#8a8d89;
   --line:#e2e2dc; --line-2:#d2d2cb;
-  --accent:#1f6fd0; --accent-ink:#ffffff; --accent-soft:#e8f0fb;
+  --accent:#0f6b5f; --accent-ink:#ffffff; --accent-soft:#e1efec;
   --ok:#0b7d3e; --warn:#a9700a; --bad:#c23131;
   --ok-soft:#e6f3ec; --warn-soft:#fbf2df; --bad-soft:#fbeaea;
   --display:'Archivo',system-ui,sans-serif;
@@ -28,7 +28,7 @@
   --bg:#101211; --surface:#191c1b; --sunken:#141716;
   --ink:#f3f4f2; --ink-2:#b6bab6; --muted:#878b87;
   --line:#2a2e2c; --line-2:#3a3f3c;
-  --accent:#5ea2ec; --accent-ink:#0d1016; --accent-soft:#162332;
+  --accent:#4fb5a3; --accent-ink:#0c1412; --accent-soft:#17302b;
   --ok:#53c07f; --warn:#d9a53c; --bad:#e97070;
   --ok-soft:#14261c; --warn-soft:#272013; --bad-soft:#2a1818;
 }}
@@ -37,7 +37,7 @@
   --bg:#101211; --surface:#191c1b; --sunken:#141716;
   --ink:#f3f4f2; --ink-2:#b6bab6; --muted:#878b87;
   --line:#2a2e2c; --line-2:#3a3f3c;
-  --accent:#5ea2ec; --accent-ink:#0d1016; --accent-soft:#162332;
+  --accent:#4fb5a3; --accent-ink:#0c1412; --accent-soft:#17302b;
   --ok:#53c07f; --warn:#d9a53c; --bad:#e97070;
   --ok-soft:#14261c; --warn-soft:#272013; --bad-soft:#2a1818;
 }
@@ -188,6 +188,12 @@ footer{padding-block:34px 44px; border-top:1px solid var(--line); color:var(--mu
 <header class="hero">
   <div class="eyebrow">TTPU · Kiberxavfsizlik muhandisligi</div>
   <h1>Attendly</h1>
+  <div style="margin:18px 0 6px;display:flex;gap:8px;flex-wrap:wrap">
+    <a href="login.html" style="display:inline-block;padding:9px 16px;border-radius:9px;text-decoration:none;font-weight:600;font-size:14px;border:1px solid var(--line-2);background:var(--accent);color:var(--accent-ink);border-color:var(--accent)">Jonli demoni sinash</a>
+    <a href="admin/" style="display:inline-block;padding:9px 16px;border-radius:9px;text-decoration:none;font-weight:600;font-size:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink)">Admin</a>
+    <a href="teacher/" style="display:inline-block;padding:9px 16px;border-radius:9px;text-decoration:none;font-weight:600;font-size:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink)">O'qituvchi</a>
+    <a href="student/" style="display:inline-block;padding:9px 16px;border-radius:9px;text-decoration:none;font-weight:600;font-size:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink)">Talaba</a></div>
+  <p class="sm" style="color:var(--muted)">Ro'yxatdan o'tish shart emas — login va parol kirish sahifasida tayyor.</p>
   <p class="lede">Davomat tizimi, uning butun g'oyasi bitta jumlada: <b>QR kod uch soniyada
   o'ladi</b>. O'qituvchi ekranda kod ko'rsatadi, talaba skanerlaydi — telefon joylashuvni
   va shaxsni tasdiqlaydi. Do'stiga skrinshot yuborib ulgurmaydi.</p>
