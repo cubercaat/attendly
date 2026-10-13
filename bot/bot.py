@@ -25,7 +25,9 @@ from sqlalchemy import select  # noqa: E402
 
 from app.config import settings  # noqa: E402
 from app.db import SessionLocal  # noqa: E402
-from app.models import Group, LoginToken, Role, User, now_utc  # noqa: E402
+from app.models import (  # noqa: E402
+    Group, LoginToken, Role, StaffInvite, User, aware, now_utc,
+)
 from app.security import random_token  # noqa: E402
 
 logging.basicConfig(level=logging.INFO,
@@ -36,6 +38,13 @@ log = logging.getLogger("bot")
 class Reg(StatesGroup):
     full_name = State()
     phone = State()
+
+
+ROLE_UZ = {
+    Role.teacher.value: "o'qituvchi",
+    Role.starosta.value: "starosta",
+    Role.student.value: "talaba",
+}
 
 
 def phone_kb() -> ReplyKeyboardMarkup:
@@ -68,6 +77,10 @@ dp = Dispatcher(storage=MemoryStorage())
 @dp.message(CommandStart(deep_link=True))
 async def start_deep(message: Message, command: CommandObject, state: FSMContext):
     payload = (command.args or "").strip()
+
+    if payload.startswith("t_"):
+        await start_staff(message, state, payload[2:])
+        return
     if not payload.startswith("g_"):
         await start_plain(message, state)
         return
@@ -95,12 +108,60 @@ async def start_deep(message: Message, command: CommandObject, state: FSMContext
             return
 
     await state.set_state(Reg.full_name)
-    await state.update_data(group_id=group.id, group_code=group.code)
+    await state.update_data(group_id=group.id, group_code=group.code,
+                            role=Role.student.value, invite_token=None)
     await message.answer(
         f"👋 Assalomu alaykum!\n\n"
         f"<b>{group.code}</b> guruhi davomat tizimiga ro'yxatdan o'tyapsiz.\n\n"
         f"<b>Ism va familiyangizni</b> to'liq yozing.\n"
         f"<i>Masalan: Mamatqulov Zafar</i>",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+
+async def start_staff(message: Message, state: FSMContext, token: str):
+    """O'qituvchi / starosta taklif havolasi."""
+    async with SessionLocal() as db:
+        inv = await db.scalar(select(StaffInvite).where(StaffInvite.token == token))
+        if not inv or inv.used_at is not None or aware(inv.expires_at) < now_utc():
+            await message.answer(
+                "❌ Taklif havolasi yaroqsiz yoki ishlatib bo'lingan.\n"
+                "Administratordan yangisini so'rang."
+            )
+            return
+
+        group = await db.get(Group, inv.group_id) if inv.group_id else None
+        user = await db.scalar(
+            select(User).where(User.telegram_id == message.from_user.id)
+        )
+        if user and user.full_name and user.phone:
+            user.role = inv.role
+            if inv.group_id:
+                user.group_id = inv.group_id
+                if inv.role == Role.starosta.value and group:
+                    group.starosta_id = user.id
+            inv.used_by, inv.used_at = user.id, now_utc()
+            link = await make_login_link(db, user)
+            await message.answer(
+                f"✅ Sizga <b>{ROLE_UZ.get(inv.role, inv.role)}</b> huquqi berildi."
+                + (f"\n👥 Guruh: <b>{group.code}</b>" if group else ""),
+                reply_markup=site_kb(link),
+            )
+            return
+
+    await state.set_state(Reg.full_name)
+    await state.update_data(
+        group_id=inv.group_id,
+        group_code=group.code if group else None,
+        role=inv.role,
+        invite_token=token,
+    )
+    await message.answer(
+        f"👋 Assalomu alaykum!\n\n"
+        f"Siz <b>{ROLE_UZ.get(inv.role, inv.role)}</b> sifatida ro'yxatdan o'tyapsiz"
+        + (f" ({group.code})" if group else "") + ".\n\n"
+        f"<b>Ism va familiyangizni</b> to'liq yozing.\n"
+        f"<i>Masalan: Olimov Jahongir</i>",
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -163,46 +224,82 @@ async def reg_phone(message: Message, state: FSMContext):
         )
         if dup:
             await message.answer(
-                "❌ Bu raqam allaqachon boshqa talabaga biriktirilgan.",
+                "❌ Bu raqam allaqachon boshqa hisobga biriktirilgan.",
                 reply_markup=ReplyKeyboardRemove(),
             )
             await state.clear()
             return
 
+        role = data.get("role") or Role.student.value
+        invite_token = data.get("invite_token")
+
+        # Taklif havolasini qayta tekshiramiz — oraliqda ishlatilgan bo'lishi mumkin
+        inv = None
+        if invite_token:
+            inv = await db.scalar(
+                select(StaffInvite).where(StaffInvite.token == invite_token)
+            )
+            if not inv or inv.used_at is not None or aware(inv.expires_at) < now_utc():
+                await message.answer(
+                    "❌ Taklif havolasi ishlatib bo'lingan yoki eskirgan.",
+                    reply_markup=ReplyKeyboardRemove(),
+                )
+                await state.clear()
+                return
+            role = inv.role
+
+        if message.from_user.id in settings.admin_ids:
+            role = Role.super_admin.value
+
         user = await db.scalar(
             select(User).where(User.telegram_id == message.from_user.id)
         )
-        is_admin = message.from_user.id in settings.admin_ids
         if user:
             user.full_name = data["full_name"]
             user.phone = phone
             user.group_id = data["group_id"]
             user.username = message.from_user.username
-            if is_admin:
-                user.role = Role.super_admin.value
+            user.role = role
         else:
             user = User(
                 full_name=data["full_name"], phone=phone,
                 telegram_id=message.from_user.id,
                 username=message.from_user.username,
-                role=Role.super_admin.value if is_admin else Role.student.value,
-                group_id=data["group_id"],
+                role=role, group_id=data["group_id"],
             )
             db.add(user)
+        await db.flush()
+
+        if inv:
+            inv.used_by, inv.used_at = user.id, now_utc()
+            if inv.role == Role.starosta.value and inv.group_id:
+                group = await db.get(Group, inv.group_id)
+                if group:
+                    group.starosta_id = user.id
+
         await db.commit()
         await db.refresh(user)
         link = await make_login_link(db, user)
 
     await state.clear()
-    await message.answer(
-        f"✅ Ro'yxatdan o'tdingiz!\n\n"
-        f"👤 {data['full_name']}\n"
-        f"👥 {data['group_code']}\n"
-        f"📱 {phone}\n\n"
-        f"Endi saytga o'tib <b>shaxsingizni biriktiring</b> — Face ID va yuz skaneri. "
-        f"Bu bir martalik amal.",
-        reply_markup=ReplyKeyboardRemove(),
-    )
+    lines = [
+        "✅ Ro'yxatdan o'tdingiz!\n",
+        f"👤 {data['full_name']}",
+        f"🎓 {ROLE_UZ.get(role, role)}",
+    ]
+    if data.get("group_code"):
+        lines.append(f"👥 {data['group_code']}")
+    lines.append(f"📱 {phone}")
+
+    if role == Role.student.value:
+        lines.append(
+            "\nEndi saytga o'tib <b>shaxsingizni biriktiring</b> — Face ID va "
+            "yuz skaneri. Bu bir martalik amal."
+        )
+    else:
+        lines.append("\nSaytga o'tib panelingizni oching.")
+
+    await message.answer("\n".join(lines), reply_markup=ReplyKeyboardRemove())
     await message.answer("Quyidagi tugma orqali o'ting 👇", reply_markup=site_kb(link))
 
 

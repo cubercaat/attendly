@@ -353,7 +353,7 @@ async def my_attendance(user: User = Depends(current_user),
         "present": present,
         "items": [
             {
-                "date": l.starts_at.isoformat(),
+                "date": aware(l.starts_at).isoformat(),
                 "subject": l.subject.name if l.subject else "Dars",
                 "pair_no": l.pair_no,
                 "status": a.status,

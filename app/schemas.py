@@ -63,6 +63,13 @@ class GroupCreate(BaseModel):
     year: Optional[int] = None
 
 
+class InviteCreate(BaseModel):
+    role: Literal["teacher", "starosta"]
+    group_id: Optional[int] = None          # starosta uchun shart
+    note: Optional[str] = Field(None, max_length=128)
+    days: int = 7
+
+
 class RoomCreate(BaseModel):
     name: str
     building: Optional[str] = None

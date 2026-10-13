@@ -268,6 +268,26 @@ class Attendance(Base):
 
 # ------------------------------------------------------------ xizmat
 
+class StaffInvite(Base):
+    """O'qituvchi / starosta uchun bir martalik taklif havolasi.
+
+    Admin yaratadi, odam botda shu havola orqali ro'yxatdan o'tadi va
+    darhol kerakli rolni oladi — qo'lda rol almashtirish shart emas.
+    """
+    __tablename__ = "staff_invites"
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    role: Mapped[str] = mapped_column(String(16))          # teacher | starosta
+    group_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("groups.id", ondelete="SET NULL")
+    )                                                       # starosta uchun
+    note: Mapped[Optional[str]] = mapped_column(String(128))  # kimga berilgani
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    expires_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True))
+    used_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    used_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
+
+
 class LoginToken(Base):
     """Bot → sayt bir martalik ko'prigi."""
     __tablename__ = "login_tokens"

@@ -16,7 +16,7 @@ from app.db import SessionLocal, get_db
 from app.deps import require_staff, require_teacher
 from app.models import (
     Attendance, AttStatus, AuditLog, Group, Lesson, LessonSession, LessonStatus,
-    Role, Room, User, aware, now_utc,
+    Role, Room, Subject, User, aware, now_utc,
 )
 from app.schemas import LessonCreate, OpenSession, ReviewAction
 from app.security import make_qr_token, seconds_to_next_window
@@ -100,7 +100,7 @@ async def lessons_today(
             "group": l.group.code if l.group else None,
             "room": l.room.name if l.room else None,
             "pair_no": l.pair_no,
-            "starts_at": l.starts_at.isoformat(),
+            "starts_at": aware(l.starts_at).isoformat(),
             "status": l.status,
         }
         for l in lessons
@@ -130,7 +130,7 @@ async def open_lesson(
     lesson.status = LessonStatus.open.value
     db.add(AuditLog(user_id=user.id, lesson_id=lesson_id, action="lesson_open", ok=True))
     await db.commit()
-    return {"ok": True, "closes_at": closes.isoformat(), "radius_m": radius}
+    return {"ok": True, "closes_at": aware(closes).isoformat(), "radius_m": radius}
 
 
 @router.post("/lessons/{lesson_id}/close")
@@ -193,7 +193,7 @@ async def qr_token(
         "svg": qr_svg(url),
         "rotate_in": round(seconds_to_next_window(), 2),
         "rotate_seconds": settings.qr_rotate_seconds,
-        "closes_at": ls.closes_at.isoformat(),
+        "closes_at": aware(ls.closes_at).isoformat(),
     }
 
 
@@ -229,7 +229,7 @@ async def _roster(db: AsyncSession, lesson: Lesson) -> dict:
             "name": s.full_name,
             "status": a.status if a else "pending",
             "method": a.method if a else None,
-            "at": a.marked_at.isoformat() if a and a.marked_at else None,
+            "at": aware(a.marked_at).isoformat() if a and a.marked_at else None,
             "flagged": bool(a.flagged) if a else False,
             "flag_reason": a.flag_reason if a else None,
             "distance_m": round(a.distance_m) if a and a.distance_m else None,
@@ -309,6 +309,21 @@ async def review(
 
 
 # ------------------------------------------------------------- guruhlar
+
+@router.get("/subjects")
+async def subjects(_: User = Depends(require_staff), db: AsyncSession = Depends(get_db)):
+    rows = (await db.scalars(select(Subject).order_by(Subject.name))).all()
+    return [{"id": s.id, "name": s.name} for s in rows]
+
+
+@router.get("/rooms")
+async def rooms(_: User = Depends(require_staff), db: AsyncSession = Depends(get_db)):
+    rows = (await db.scalars(select(Room).order_by(Room.name))).all()
+    return [
+        {"id": r.id, "name": r.name, "building": r.building, "radius_m": r.radius_m}
+        for r in rows
+    ]
+
 
 @router.get("/groups")
 async def groups(user: User = Depends(require_staff), db: AsyncSession = Depends(get_db)):

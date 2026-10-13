@@ -166,3 +166,20 @@ def test_attempt_expires():
 def test_attempt_tampered():
     tok = make_attempt({"k": "attend", "uid": 7})
     assert read_attempt(tok[:-3] + "xyz") is None
+
+
+# ---------------------------------------------- xodim taklif havolasi
+
+def test_invite_token_is_unguessable():
+    """Taklif tokeni taxmin qilinadigan bo'lmasligi kerak."""
+    from app.models import new_token
+    tokens = {new_token(14) for _ in range(500)}
+    assert len(tokens) == 500, "tokenlar takrorlandi"
+    assert all(len(t) == 14 for t in tokens)
+
+
+def test_login_token_entropy():
+    from app.security import random_token
+    tokens = {random_token(24) for _ in range(500)}
+    assert len(tokens) == 500
+    assert all(len(t) >= 30 for t in tokens)

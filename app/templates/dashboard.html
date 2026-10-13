@@ -4,8 +4,41 @@
 <div class="wrap wrap-wide">
   <div class="card">
     <h1>Panel</h1>
-    <p class="small">{{ user.full_name }} · {{ user.role }}</p>
+    <p class="small">{{ user.full_name }} · {{ role_uz }}</p>
   </div>
+
+  <!-- Dars yaratish — o'qituvchi va admin -->
+  {% if user.role in ('teacher', 'super_admin') %}
+  <div class="card">
+    <div class="card-head">
+      <h2>Yangi dars</h2>
+      <button class="btn ghost sm" id="toggle-new">Ochish</button>
+    </div>
+    <div id="new-lesson" class="hidden">
+      <div class="form-grid">
+        <label>Guruh
+          <select id="f-group"></select></label>
+        <label>Fan
+          <select id="f-subject"></select></label>
+        <label>Auditoriya
+          <select id="f-room"></select></label>
+        <label>Para
+          <select id="f-pair">
+            <option value="1">1-para</option>
+            <option value="2">2-para</option>
+            <option value="3">3-para</option>
+            <option value="4">4-para</option>
+            <option value="5">5-para</option>
+          </select></label>
+      </div>
+      <button class="btn" id="create-btn" style="margin-top:14px">
+        Darsni yaratish va davomatni ochish</button>
+      <p class="small" style="margin-top:10px">Dars hozirdan boshlanadi.
+         Yaratilgach QR ekraniga o'tasiz.</p>
+      <div class="note hidden" id="c-note"></div>
+    </div>
+  </div>
+  {% endif %}
 
   <div class="grid2">
     <div class="card">
@@ -21,7 +54,45 @@
          tarqatadi — talaba shu havola orqali ro'yxatdan o'tadi.</p>
     </div>
   </div>
+
+  <!-- Xodim taklif havolalari — faqat super admin -->
+  {% if user.role == 'super_admin' %}
+  <div class="card">
+    <div class="card-head">
+      <h2>O'qituvchi / starosta qo'shish</h2>
+      <button class="btn ghost sm" id="toggle-inv">Ochish</button>
+    </div>
+    <div id="inv-box" class="hidden">
+      <p class="small">Havola yarating va kerakli odamga yuboring. U Telegramda
+         ochadi, ism-familiya va telefon raqamini kiritadi — darhol shu rolni oladi.
+         Havola bir marta ishlaydi.</p>
+      <div class="form-grid" style="margin-top:12px">
+        <label>Rol
+          <select id="i-role">
+            <option value="teacher">O'qituvchi</option>
+            <option value="starosta">Starosta</option>
+          </select></label>
+        <label>Guruh <span class="small">(starosta uchun)</span>
+          <select id="i-group"></select></label>
+        <label>Izoh
+          <input type="text" id="i-note" placeholder="Olimov Jahongir" maxlength="128"></label>
+        <label>Amal qilish muddati
+          <select id="i-days">
+            <option value="7">7 kun</option>
+            <option value="1">1 kun</option>
+            <option value="30">30 kun</option>
+          </select></label>
+      </div>
+      <button class="btn" id="inv-btn" style="margin-top:14px">Havola yaratish</button>
+      <div class="note hidden" id="i-note-box"></div>
+      <div class="list" id="inv-list" style="margin-top:14px"></div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
 
-{% block scripts %}<script src="/static/js/dashboard.js"></script>{% endblock %}
+{% block scripts %}
+<script>window.MY_ROLE = {{ user.role | tojson }};</script>
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

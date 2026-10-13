@@ -150,8 +150,28 @@ Rasm ko'rsatsa — kadrlar bir xil chiqadi va liveness yiqiladi.
 
 Guruh kodi: `CYB1-26`, `CYB2-26`, `CYB3-26`, `CYB4-26`
 
-Starostani tayinlash:
-`POST /api/admin/users/{id}/role?role=starosta` (yoki admin paneldan).
+### O'qituvchi va starostani qo'shish
+
+Panel → **«O'qituvchi / starosta qo'shish»** → rol va (starosta uchun) guruhni
+tanlang → **Havola yaratish**.
+
+Havola `https://t.me/AttendlyBot?start=t_<token>` ko'rinishida chiqadi. Odam uni
+Telegramda ochadi, ism-familiya va telefon raqamini kiritadi — darhol kerakli
+rolni oladi va saytga kirish havolasini oladi. **Havola bir marta ishlaydi** va
+muddati bor (default 7 kun).
+
+API: `POST /api/admin/invites {role, group_id?, note?, days}`
+
+Rolni qo'lda o'zgartirish ham mumkin:
+`POST /api/admin/users/{id}/role?role=starosta`
+
+### Dars yaratish
+
+O'qituvchi panelida **«Yangi dars»** → guruh, fan, auditoriya, para → tugma.
+Dars yaratiladi, davomat darhol ochiladi va QR ekraniga o'tasiz.
+
+> Auditoriya tanlanmasa GPS tekshiruvi o'tkazilmaydi — xona koordinatasi
+> bo'lmasa geofence ishlamaydi. Avval admin xona qo'shsin.
 
 ---
 

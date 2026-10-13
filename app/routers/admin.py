@@ -1,4 +1,6 @@
-"""Super admin: guruh, xona, fan, rol boshqaruvi."""
+"""Super admin: guruh, xona, fan, rol va taklif havolalari."""
+import datetime as dt
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,8 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_db
 from app.deps import require_admin
-from app.models import Faculty, Group, Role, Room, Subject, User, new_token
-from app.schemas import GroupCreate, RoomCreate
+from app.models import (
+    Faculty, Group, Role, Room, StaffInvite, Subject, User, new_token, now_utc,
+)
+from app.schemas import GroupCreate, InviteCreate, RoomCreate
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -54,6 +58,50 @@ async def set_role(user_id: int, role: str, _: User = Depends(require_admin),
             g.starosta_id = u.id
     await db.commit()
     return {"ok": True, "role": u.role}
+
+
+# ---------------------------------------------- xodim taklif havolalari
+
+@router.post("/invites")
+async def create_invite(body: InviteCreate, user: User = Depends(require_admin),
+                        db: AsyncSession = Depends(get_db)):
+    """O'qituvchi yoki starosta uchun bir martalik taklif havolasi."""
+    if body.role not in (Role.teacher.value, Role.starosta.value):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            "Faqat teacher yoki starosta")
+    if body.role == Role.starosta.value and not body.group_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            "Starosta uchun guruh ko'rsating")
+
+    inv = StaffInvite(
+        token=new_token(14), role=body.role, group_id=body.group_id,
+        note=body.note, created_by=user.id,
+        expires_at=now_utc() + dt.timedelta(days=max(1, body.days)),
+    )
+    db.add(inv)
+    await db.commit()
+    return _invite_out(inv)
+
+
+@router.get("/invites")
+async def list_invites(_: User = Depends(require_admin),
+                       db: AsyncSession = Depends(get_db)):
+    rows = (await db.scalars(
+        select(StaffInvite).order_by(StaffInvite.created_at.desc()).limit(50)
+    )).all()
+    return [_invite_out(i) for i in rows]
+
+
+def _invite_out(i: StaffInvite) -> dict:
+    return {
+        "token": i.token,
+        "role": i.role,
+        "note": i.note,
+        "group_id": i.group_id,
+        "used": i.used_at is not None,
+        "expires_at": i.expires_at.isoformat(),
+        "url": f"https://t.me/{settings.bot_username}?start=t_{i.token}",
+    }
 
 
 @router.post("/rooms")

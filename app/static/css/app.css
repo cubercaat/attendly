@@ -61,7 +61,6 @@ a { color: var(--accent); text-decoration: none; }
 
 /* ----------------------------------------------------- test rejimi tasmasi */
 .demo-bar {
-  position: sticky; top: 0; z-index: 50;
   display: flex; align-items: center; justify-content: center; gap: 14px;
   flex-wrap: wrap;
   padding: 7px 14px;
@@ -203,6 +202,14 @@ a { color: var(--accent); text-decoration: none; }
 
 .grid2 { display: grid; gap: 12px; grid-template-columns: 1fr; }
 @media (min-width: 720px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+
+.form-grid { display: grid; gap: 12px; grid-template-columns: 1fr; margin-top: 4px; }
+@media (min-width: 560px) { .form-grid { grid-template-columns: 1fr 1fr; } }
+.form-grid label {
+  display: grid; gap: 5px;
+  font-size: .82rem; font-weight: 600; color: var(--ink-2);
+}
+.form-grid label .small { font-weight: 400; }
 
 input[type=text], input[type=number], select {
   width: 100%; padding: 12px 14px; font: inherit;

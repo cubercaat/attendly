@@ -140,6 +140,8 @@ attendance       id, lesson_id, user_id, status, method,
                  └─ UNIQUE(lesson_id, user_id)
 
 login_tokens     token, user_id, expires_at, used_at            ← bot → sayt ko'prigi
+staff_invites    token, role, group_id, note, created_by,
+                 expires_at, used_by, used_at                   ← o'qituvchi/starosta taklifi
 audit_log        id, user_id, lesson_id, action, ok, reason,
                  ip, device_hash, meta (jsonb), created_at
 ```
@@ -192,6 +194,7 @@ faqat holat o'zgarishida yumshoq o'tish.
 | 2 | Bot ko'prigi + ro'yxatdan o'tish | ✅ shu yetkazmada |
 | 3 | Passkey + yuz biriktirish/tekshirish | ✅ shu yetkazmada |
 | 4 | O'qituvchi QR ekrani + skaner + jonli feed | ✅ shu yetkazmada |
-| 5 | Admin CRUD (fakultet/guruh/xona/o'qituvchi) | minimal — kengaytiriladi |
+| 5 | Xodim taklif havolalari (o'qituvchi/starosta) + dars yaratish UI | ✅ |
+| 5b | Admin CRUD (fakultet/xona/fan) | API bor, UI minimal |
 | 6 | Hisobotlar + grafiklar (mavjud bot kodidan) | keyingi bosqich |
 | 7 | PWA (offline, "ilovaga o'xshash"), push | keyingi bosqich |

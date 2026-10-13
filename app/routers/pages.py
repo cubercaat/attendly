@@ -77,11 +77,21 @@ async def me_page(request: Request, user: User | None = Depends(current_user_opt
     return templates.TemplateResponse("me.html", ctx(request, user))
 
 
+ROLE_UZ = {
+    "super_admin": "Super admin",
+    "teacher": "O'qituvchi",
+    "starosta": "Starosta",
+    "student": "Talaba",
+}
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, user: User | None = Depends(current_user_optional)):
     if not user or not user.is_staff:
         return RedirectResponse("/", status_code=302)
-    return templates.TemplateResponse("dashboard.html", ctx(request, user))
+    return templates.TemplateResponse(
+        "dashboard.html", ctx(request, user, role_uz=ROLE_UZ.get(user.role, user.role))
+    )
 
 
 @router.get("/teacher/lesson/{lesson_id}/qr", response_class=HTMLResponse)
