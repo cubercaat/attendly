@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f6fd0">
+<meta name="description" content="Attendly — TTPU davomat tizimi: har 3 soniyada yangilanadigan QR, GPS geofence, passkey va yuz tanish.">
+<title>Attendly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: bitta ustun, tik ritm keng; qahramon — tirik QR paneli */
+:root{
+  --bg:#f6f6f4; --surface:#ffffff; --sunken:#f0efec;
+  --ink:#111312; --ink-2:#4e524f; --muted:#8a8d89;
+  --line:#e2e2dc; --line-2:#d2d2cb;
+  --accent:#1f6fd0; --accent-ink:#ffffff; --accent-soft:#e8f0fb;
+  --ok:#0b7d3e; --warn:#a9700a; --bad:#c23131;
+  --ok-soft:#e6f3ec; --warn-soft:#fbf2df; --bad-soft:#fbeaea;
+  --display:'Archivo',system-ui,sans-serif;
+  --body:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#101211; --surface:#191c1b; --sunken:#141716;
+  --ink:#f3f4f2; --ink-2:#b6bab6; --muted:#878b87;
+  --line:#2a2e2c; --line-2:#3a3f3c;
+  --accent:#5ea2ec; --accent-ink:#0d1016; --accent-soft:#162332;
+  --ok:#53c07f; --warn:#d9a53c; --bad:#e97070;
+  --ok-soft:#14261c; --warn-soft:#272013; --bad-soft:#2a1818;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#101211; --surface:#191c1b; --sunken:#141716;
+  --ink:#f3f4f2; --ink-2:#b6bab6; --muted:#878b87;
+  --line:#2a2e2c; --line-2:#3a3f3c;
+  --accent:#5ea2ec; --accent-ink:#0d1016; --accent-soft:#162332;
+  --ok:#53c07f; --warn:#d9a53c; --bad:#e97070;
+  --ok-soft:#14261c; --warn-soft:#272013; --bad-soft:#2a1818;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--body); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:860px; margin:0 auto; padding-inline:20px; padding-block:0}
+h1,h2,h3{font-family:var(--display); text-wrap:balance; margin:0; line-height:1.15}
+h1{font-size:clamp(2.1rem,6vw,3.2rem); font-weight:700; letter-spacing:-.025em}
+h2{font-size:clamp(1.3rem,3.4vw,1.65rem); font-weight:600; letter-spacing:-.015em}
+h3{font-size:1rem; font-weight:600}
+p{margin:0; color:var(--ink-2)}
+a{color:var(--accent)}
+.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
+.eyebrow{
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted);
+}
+section{padding-block:clamp(40px,7vw,68px); border-top:1px solid var(--line)}
+section:first-of-type{border-top:0}
+.stack{display:grid; gap:18px}
+.stack-sm{display:grid; gap:10px}
+
+/* ---------- qahramon ---------- */
+header.hero{padding-block:clamp(44px,8vw,76px) clamp(28px,5vw,44px)}
+.hero .lede{font-size:clamp(1.02rem,2.3vw,1.18rem); max-width:56ch; margin-top:16px}
+.tagstrip{display:flex; flex-wrap:wrap; gap:8px; margin-top:22px}
+.tag{
+  font-family:var(--mono); font-size:.74rem; padding:5px 10px;
+  border:1px solid var(--line-2); border-radius:999px; color:var(--ink-2);
+  background:var(--surface);
+}
+
+/* ---------- QR paneli ---------- */
+.qrgrid{display:grid; gap:20px; grid-template-columns:1fr; align-items:start}
+@media(min-width:720px){ .qrgrid{grid-template-columns:minmax(0,300px) minmax(0,1fr)} }
+.qrcard{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  padding:18px; display:grid; gap:12px; justify-items:center;
+}
+.qrbox{width:100%; max-width:260px; aspect-ratio:1; background:#fff; border-radius:8px; padding:8px}
+.qrbox svg{width:100%; height:100%; display:block; shape-rendering:crispEdges}
+.qrbox.dead{position:relative}
+.qrbox.dead::after{
+  content:"ESKIRGAN"; position:absolute; inset:0; display:grid; place-items:center;
+  background:rgba(194,49,49,.92); color:#fff; border-radius:8px;
+  font-family:var(--mono); font-size:.9rem; letter-spacing:.1em;
+}
+.ticker{width:100%; height:3px; background:var(--line); border-radius:2px; overflow:hidden}
+.ticker i{display:block; height:100%; background:var(--accent); width:100%}
+.tokenline{font-family:var(--mono); font-size:.76rem; color:var(--muted); word-break:break-all; text-align:center}
+
+/* ---------- panel / qatorlar ---------- */
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); overflow:hidden}
+.panel-head{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:13px 16px; border-bottom:1px solid var(--line); background:var(--sunken);
+}
+.panel-head h3{margin:0}
+.rows{display:grid}
+.row{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:11px 16px; border-top:1px solid var(--line); font-size:.93rem;
+}
+.rows .row:first-child{border-top:0}
+.row .who{min-width:0}
+.row .who b{font-weight:500}
+.row .sub{display:block; font-size:.76rem; color:var(--muted); font-family:var(--mono)}
+
+.pill{
+  font-size:.74rem; font-weight:500; padding:3px 9px; border-radius:999px;
+  border:1px solid var(--line-2); color:var(--ink-2); background:var(--bg); white-space:nowrap;
+}
+.pill.ok{color:var(--ok); background:var(--ok-soft); border-color:transparent}
+.pill.bad{color:var(--bad); background:var(--bad-soft); border-color:transparent}
+.pill.warn{color:var(--warn); background:var(--warn-soft); border-color:transparent}
+
+/* ---------- aldash simulyatori ---------- */
+.tries{display:grid; gap:10px; grid-template-columns:1fr}
+@media(min-width:620px){ .tries{grid-template-columns:1fr 1fr} }
+.try{
+  display:flex; gap:12px; align-items:flex-start; text-align:left; width:100%;
+  padding:14px 15px; border:1px solid var(--line-2); border-radius:10px;
+  background:var(--surface); color:var(--ink); font:inherit; cursor:pointer;
+  transition:border-color .15s ease, background .15s ease;
+}
+.try:hover{border-color:var(--accent); background:var(--accent-soft)}
+.try:disabled{opacity:.5; cursor:not-allowed}
+.try:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.try .ico{
+  flex:0 0 28px; height:28px; border-radius:7px; background:var(--sunken);
+  display:grid; place-items:center; font-family:var(--mono); font-size:.8rem; color:var(--ink-2);
+}
+.try b{display:block; font-weight:600; font-size:.93rem}
+.try span{display:block; font-size:.81rem; color:var(--muted); margin-top:2px}
+
+.verdict{
+  border-radius:10px; padding:14px 16px; border:1px solid var(--line);
+  background:var(--surface); display:grid; gap:7px; min-height:84px;
+}
+.verdict .head{display:flex; align-items:center; gap:9px; font-weight:600; font-family:var(--display)}
+.verdict .body{font-size:.9rem; color:var(--ink-2)}
+.verdict .trace{font-family:var(--mono); font-size:.76rem; color:var(--muted)}
+.verdict.ok{border-color:var(--ok); background:var(--ok-soft)}
+.verdict.bad{border-color:var(--bad); background:var(--bad-soft)}
+.verdict .head .mk{
+  width:20px; height:20px; border-radius:50%; display:grid; place-items:center;
+  font-size:.72rem; color:#fff; flex:0 0 20px;
+}
+.verdict.ok .mk{background:var(--ok)} .verdict.bad .mk{background:var(--bad)}
+
+/* ---------- qatlamlar ---------- */
+.layers{display:grid; gap:0; border:1px solid var(--line); border-radius:var(--r); overflow:hidden; background:var(--surface)}
+.layer{display:grid; grid-template-columns:34px minmax(0,1fr); gap:14px; padding:15px 16px; border-top:1px solid var(--line)}
+.layer:first-child{border-top:0}
+.layer .n{
+  font-family:var(--mono); font-size:.78rem; color:var(--accent);
+  border:1px solid var(--accent); border-radius:7px; height:28px;
+  display:grid; place-items:center;
+}
+.layer p{font-size:.88rem; margin-top:3px}
+
+/* ---------- kod ---------- */
+pre{
+  margin:0; background:var(--sunken); border:1px solid var(--line); border-radius:10px;
+  padding:14px 16px; overflow-x:auto; font-family:var(--mono); font-size:.82rem;
+  line-height:1.65; color:var(--ink);
+}
+.note{
+  border-left:3px solid var(--accent); background:var(--accent-soft);
+  padding:13px 16px; border-radius:0 8px 8px 0; font-size:.89rem; color:var(--ink-2);
+}
+.grid2{display:grid; gap:14px; grid-template-columns:1fr}
+@media(min-width:620px){ .grid2{grid-template-columns:1fr 1fr} }
+footer{padding-block:34px 44px; border-top:1px solid var(--line); color:var(--muted); font-size:.84rem}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){ *{transition-duration:.001ms !important; animation-duration:.001ms !important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">TTPU · Kiberxavfsizlik muhandisligi</div>
+  <h1>Attendly</h1>
+  <p class="lede">Davomat tizimi, uning butun g'oyasi bitta jumlada: <b>QR kod uch soniyada
+  o'ladi</b>. O'qituvchi ekranda kod ko'rsatadi, talaba skanerlaydi — telefon joylashuvni
+  va shaxsni tasdiqlaydi. Do'stiga skrinshot yuborib ulgurmaydi.</p>
+  <div class="tagstrip">
+    <span class="tag">FastAPI</span>
+    <span class="tag">PostgreSQL</span>
+    <span class="tag">WebAuthn</span>
+    <span class="tag">InsightFace</span>
+    <span class="tag">Telegram bot</span>
+  </div>
+</header>
+
+<section>
+  <div class="eyebrow">Jonli</div>
+  <h2 style="margin-top:8px">QR haqiqatan aylanadi</h2>
+  <p style="margin-top:10px; max-width:58ch">Quyidagi kod o'qituvchi ekranidagi bilan bir xil
+  formatda: <span class="mono">dars.oyna.imzo</span>. Oyna raqami har uch soniyada o'sadi,
+  server esa oxirgi to'rt oynani qabul qiladi — ya'ni kod 9–12 soniya yashaydi.</p>
+
+  <div class="qrgrid" style="margin-top:22px">
+    <div class="qrcard">
+      <div class="qrbox" id="qrbox"></div>
+      <div class="ticker"><i id="ticker"></i></div>
+      <div class="tokenline" id="tokenline">—</div>
+    </div>
+
+    <div class="stack">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>CYB3-26 · 1-para</h3>
+          <span class="pill" id="count">0 / 4 keldi</span>
+        </div>
+        <div class="rows" id="roster"></div>
+      </div>
+      <p style="font-size:.84rem; color:var(--muted)">
+        O'qituvchi ekranining o'zi — ism skanerlangan zahoti shu ro'yxatda chiqadi.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Sinab ko'ring</div>
+  <h2 style="margin-top:8px">Aldab ko'ring</h2>
+  <p style="margin-top:10px; max-width:58ch">To'rtta urinish — uchtasi haqiqiy tizimda ham
+  rad etiladi. Bosing, server qanday javob berishini ko'rasiz.</p>
+
+  <div class="tries" style="margin-top:20px">
+    <button class="try" data-try="shot">
+      <span class="ico">1</span>
+      <span><b>Do'stimga skrinshot yuboraman</b>
+      <span>U uyda, kodni telefonidan skanerlaydi</span></span>
+    </button>
+    <button class="try" data-try="home">
+      <span class="ico">2</span>
+      <span><b>Uydan skanerlayman</b>
+      <span>Darsga bormay, yotgan joydan</span></span>
+    </button>
+    <button class="try" data-try="friend">
+      <span class="ico">3</span>
+      <span><b>Do'stim mening o'rnimga</b>
+      <span>U auditoriyada, mening hisobimdan</span></span>
+    </button>
+    <button class="try" data-try="real">
+      <span class="ico">4</span>
+      <span><b>O'zim, auditoriyada</b>
+      <span>Qanday bo'lishi kerak bo'lsa shunday</span></span>
+    </button>
+  </div>
+
+  <div class="verdict" id="verdict" style="margin-top:14px">
+    <div class="head"><span class="mk" style="background:var(--muted)">?</span>
+      Urinishni tanlang</div>
+    <div class="body">Har bir tugma haqiqiy serverning tekshiruv ketma-ketligini
+      bosqichma-bosqich ko'rsatadi.</div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Himoya</div>
+  <h2 style="margin-top:8px">Olti qatlam</h2>
+  <div class="layers" style="margin-top:18px">
+    <div class="layer"><span class="n">1</span><div>
+      <h3>Aylanuvchi QR</h3>
+      <p>Har 3 soniyada yangi HMAC-imzolangan token, amal qilish muddati 9–12 soniya.
+      Skrinshot yetib borguncha kod o'ladi.</p></div></div>
+    <div class="layer"><span class="n">2</span><div>
+      <h3>GPS geofence</h3>
+      <p>Auditoriya koordinatasidan belgilangan radius ichida. GPS aniqligi 100 m dan
+      yomon bo'lsa qabul qilinmaydi; aniqlik masofadan chegiriladi, shunda adolatli bo'ladi.</p></div></div>
+    <div class="layer"><span class="n">3</span><div>
+      <h3>Passkey (WebAuthn)</h3>
+      <p>Telefonning o'z Face ID / Touch ID si. Qurilmaga bog'langan, nusxalab bo'lmaydi,
+      server hech qanday biometrik ma'lumot ko'rmaydi.</p></div></div>
+    <div class="layer"><span class="n">4</span><div>
+      <h3>Yuz tanish + liveness</h3>
+      <p>Telefon yo'q bo'lsa zaxira yo'l: boshqa qurilmadan o'z yuzi bilan kiradi.
+      Tasodifiy harakat so'raladi (to'g'ri qarang → chapga buring), shuning uchun
+      rasm ko'rsatish o'tmaydi. Rasm saqlanmaydi — faqat 512 ta son.</p></div></div>
+    <div class="layer"><span class="n">5</span><div>
+      <h3>Qurilma barmoq izi</h3>
+      <p>Bitta telefondan ikki talaba belgilansa — yozuv bayroqlanadi va o'qituvchiga
+      ko'rinadi.</p></div></div>
+    <div class="layer"><span class="n">6</span><div>
+      <h3>O'qituvchi nazorati</h3>
+      <p>Jonli ro'yxat, bir bosishda bekor qilish. Har bir urinish — muvaffaqiyatli yoki
+      yo'q — sababi, IP si, masofasi bilan audit jurnaliga yoziladi.</p></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Ro'yxatdan o'tish</div>
+  <h2 style="margin-top:8px">Telegram orqali, bir marta</h2>
+  <div class="grid2" style="margin-top:18px">
+    <div class="panel">
+      <div class="panel-head"><h3>Talaba</h3></div>
+      <div class="rows">
+        <div class="row"><span class="who"><b>Starosta havolasi</b>
+          <span class="sub">/join/CYB3-26</span></span></div>
+        <div class="row"><span class="who"><b>Botda ism-familiya</b>
+          <span class="sub">matn</span></span></div>
+        <div class="row"><span class="who"><b>Telefon raqam</b>
+          <span class="sub">request_contact — qo'lda yozilmaydi</span></span></div>
+        <div class="row"><span class="who"><b>Saytga qaytish</b>
+          <span class="sub">bir martalik, 10 daqiqa</span></span></div>
+        <div class="row"><span class="who"><b>Face ID + yuz zaxirasi</b>
+          <span class="sub">/enroll</span></span></div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="note">Telefon raqam Telegram akkauntidan olinadi. Soxta raqam
+        kiritib bo'lmaydi, chunki raqamni foydalanuvchi emas, Telegram yuboradi.</div>
+      <div class="panel">
+        <div class="panel-head"><h3>Guruhlar</h3></div>
+        <div class="rows">
+          <div class="row"><span class="mono">CYB1-26</span><span class="pill">1-kurs</span></div>
+          <div class="row"><span class="mono">CYB2-26</span><span class="pill">2-kurs</span></div>
+          <div class="row"><span class="mono">CYB3-26</span><span class="pill ok">demo</span></div>
+          <div class="row"><span class="mono">CYB4-26</span><span class="pill">4-kurs</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Ishga tushirish</div>
+  <h2 style="margin-top:8px">Test rejimi</h2>
+  <p style="margin-top:10px; max-width:58ch">Telegram botisiz, parolsiz butun tizimni
+  bosib ko'rish. GPS va biometrika baribir tekshiriladi — demo auditoriyani o'zingiz
+  turgan nuqtaga ko'chirasiz.</p>
+  <pre style="margin-top:16px">cp .env.example .env     <span style="color:var(--muted)"># DEMO_MODE=true</span>
+pip install -r requirements.txt
+python seed_demo.py
+uvicorn app.main:app --reload
+
+<span style="color:var(--muted)"># → http://localhost:8000/demo</span></pre>
+  <div class="note" style="margin-top:14px">
+    Passkey va kamera HTTPS talab qiladi. Telefonda sinash uchun
+    <span class="mono">ngrok http 8000</span> va <span class="mono">BASE_URL</span> ni
+    o'zgartiring.
+  </div>
+</section>
+
+<footer class="wrap" style="padding-inline:0">
+  <p style="color:var(--muted)">Bu sahifa — loyihaning statik ko'rgazmasi. Haqiqiy tizim
+  FastAPI va PostgreSQL da ishlaydi, shuning uchun u serverga joylashtiriladi;
+  bu yerdagi QR va tekshiruvlar brauzerda simulyatsiya qilingan.</p>
+  <p style="margin-top:10px; color:var(--muted)">Mamatqulov Zafar · Turin Polytechnic
+  University in Tashkent</p>
+</footer>
+
+</div>
+
+<script>
+/* ---------- QR aylanishi ---------- */
+const FRAMES = [{"t":"7.597309385.n1pwPA3SiXzZ","s":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 370 370\"><g transform=\"scale(10)\"><path fill=\"#fff\" d=\"M0 0h37v37h-37z\"/><path stroke=\"#0b0b0b\" d=\"M2 2.5h7m1 0h4m6 0h1m1 0h3m3 0h7m-33 1h1m5 0h1m1 0h2m2 0h1m4 0h2m1 0h1m3 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m6 0h2m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m3 0h1m5 0h1m4 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m3 0h1m3 0h2m1 0h1m1 0h5m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m2 0h2m1 0h1m4 0h1m4 0h1m3 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-23 1h4m1 0h1m8 0h1m-24 1h1m4 0h3m1 0h1m1 0h2m2 0h5m1 0h1m1 0h2m5 0h2m-31 1h1m4 0h2m1 0h1m6 0h1m1 0h1m2 0h2m4 0h4m-29 1h2m1 0h2m3 0h1m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1m5 0h1m1 0h1m-30 1h1m1 0h1m1 0h1m1 0h1m10 0h3m1 0h1m2 0h7m-32 1h3m1 0h8m2 0h5m2 0h1m1 0h1m1 0h2m5 0h1m-33 1h3m1 0h2m1 0h1m1 0h2m5 0h1m1 0h1m1 0h7m4 0h2m-33 1h1m1 0h1m3 0h1m1 0h2m3 0h2m1 0h1m3 0h3m1 0h3m2 0h3m-32 1h2m1 0h1m4 0h2m1 0h1m5 0h2m1 0h1m1 0h2m1 0h1m4 0h1m1 0h1m-33 1h1m1 0h1m1 0h1m1 0h1m2 0h3m2 0h1m1 0h1m2 0h1m2 0h4m1 0h3m2 0h1m-32 1h1m9 0h2m6 0h1m2 0h2m2 0h1m2 0h4m-31 1h5m2 0h1m2 0h1m1 0h1m1 0h1m1 0h8m1 0h1m1 0h4m-30 1h3m1 0h2m1 0h1m1 0h1m1 0h1m2 0h3m8 0h3m1 0h1m-29 1h7m2 0h3m1 0h1m1 0h1m1 0h2m1 0h1m3 0h2m1 0h2m-33 1h2m1 0h3m4 0h1m1 0h1m1 0h1m4 0h1m1 0h3m1 0h1m2 0h3m-31 1h1m2 0h1m2 0h2m2 0h1m1 0h1m3 0h3m1 0h2m2 0h1m2 0h1m1 0h1m1 0h1m-32 1h1m6 0h1m2 0h2m3 0h1m1 0h1m1 0h1m2 0h2m1 0h1m4 0h1m1 0h1m-33 1h4m2 0h4m3 0h2m1 0h1m2 0h1m2 0h1m1 0h5m-21 1h5m3 0h1m2 0h2m2 0h2m3 0h1m1 0h1m1 0h1m-33 1h7m1 0h2m1 0h2m1 0h2m2 0h1m1 0h2m1 0h2m1 0h1m1 0h1m1 0h1m-31 1h1m5 0h1m3 0h1m1 0h1m2 0h4m4 0h2m3 0h4m-32 1h1m1 0h3m1 0h1m2 0h2m1 0h2m3 0h1m2 0h1m3 0h6m1 0h1m-32 1h1m1 0h3m1 0h1m2 0h1m1 0h2m1 0h3m3 0h3m1 0h2m1 0h2m1 0h1m1 0h1m-33 1h1m1 0h3m1 0h1m3 0h1m2 0h1m1 0h1m1 0h1m1 0h1m4 0h1m2 0h2m2 0h2m-33 1h1m5 0h1m1 0h1m1 0h1m3 0h2m1 0h3m5 0h1m1 0h2m1 0h1m-31 1h7m4 0h1m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1m1 0h1\"/></g></svg>"},{"t":"7.597309386.EsYcNBBilcPu","s":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 370 370\"><g transform=\"scale(10)\"><path fill=\"#fff\" d=\"M0 0h37v37h-37z\"/><path stroke=\"#0b0b0b\" d=\"M2 2.5h7m1 0h1m1 0h2m1 0h1m3 0h2m1 0h1m1 0h1m3 0h7m-33 1h1m5 0h1m1 0h2m2 0h1m5 0h1m1 0h1m3 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m3 0h1m2 0h1m2 0h1m1 0h2m1 0h3m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m2 0h2m1 0h3m1 0h2m3 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m5 0h1m1 0h1m2 0h1m2 0h2m4 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m2 0h2m4 0h1m1 0h1m2 0h1m1 0h1m3 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-23 1h2m1 0h1m2 0h1m2 0h1m3 0h2m-24 1h1m4 0h3m1 0h1m1 0h2m1 0h4m1 0h1m1 0h1m1 0h2m5 0h2m-33 1h1m1 0h1m4 0h2m1 0h1m2 0h1m5 0h1m2 0h2m4 0h4m-32 1h1m2 0h1m1 0h3m2 0h2m1 0h1m1 0h1m4 0h1m7 0h1m1 0h1m-28 1h2m2 0h1m1 0h2m2 0h1m5 0h2m1 0h1m2 0h7m-32 1h1m1 0h1m3 0h13m1 0h2m1 0h1m1 0h2m5 0h1m-33 1h1m1 0h1m1 0h2m3 0h2m1 0h1m3 0h1m1 0h4m1 0h1m1 0h2m4 0h2m-33 1h1m5 0h1m2 0h1m3 0h2m6 0h2m2 0h2m2 0h3m-32 1h3m5 0h2m2 0h1m2 0h1m1 0h2m3 0h1m2 0h1m4 0h1m1 0h1m-33 1h1m1 0h1m1 0h1m1 0h2m1 0h3m2 0h3m2 0h1m2 0h1m1 0h2m1 0h3m2 0h1m-33 1h2m2 0h1m4 0h1m1 0h3m5 0h1m1 0h3m2 0h1m2 0h4m-33 1h7m3 0h1m1 0h1m1 0h1m1 0h5m2 0h3m1 0h1m1 0h4m-32 1h1m1 0h2m2 0h3m2 0h2m3 0h1m1 0h1m8 0h3m1 0h1m-33 1h1m2 0h1m1 0h3m4 0h2m1 0h5m1 0h2m1 0h1m3 0h2m1 0h2m-33 1h1m2 0h3m1 0h1m2 0h3m6 0h1m1 0h2m2 0h1m2 0h3m-31 1h1m5 0h1m3 0h2m5 0h2m1 0h2m2 0h1m2 0h1m1 0h1m1 0h1m-32 1h1m1 0h2m4 0h1m1 0h1m4 0h1m1 0h1m4 0h2m1 0h1m4 0h1m1 0h1m-33 1h2m1 0h1m2 0h1m1 0h2m1 0h1m1 0h4m5 0h1m1 0h5m-21 1h1m1 0h4m2 0h2m1 0h2m2 0h2m3 0h1m1 0h1m1 0h1m-33 1h7m1 0h2m1 0h5m4 0h1m2 0h2m1 0h1m1 0h1m1 0h1m-31 1h1m5 0h1m3 0h1m1 0h2m1 0h2m1 0h1m3 0h3m3 0h4m-32 1h1m1 0h3m1 0h1m5 0h2m3 0h2m2 0h2m1 0h6m1 0h1m-32 1h1m1 0h3m1 0h1m2 0h2m1 0h1m1 0h3m2 0h3m2 0h2m1 0h2m1 0h1m1 0h1m-33 1h1m1 0h3m1 0h1m3 0h2m1 0h1m1 0h1m1 0h1m1 0h2m3 0h1m2 0h2m2 0h2m-33 1h1m5 0h1m1 0h1m1 0h1m1 0h1m1 0h2m1 0h3m5 0h1m1 0h2m1 0h1m-31 1h7m4 0h1m1 0h1m3 0h2m1 0h1m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1\"/></g></svg>"},{"t":"7.597309387.dSFpSmFkl6To","s":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 370 370\"><g transform=\"scale(10)\"><path fill=\"#fff\" d=\"M0 0h37v37h-37z\"/><path stroke=\"#0b0b0b\" d=\"M2 2.5h7m1 0h1m1 0h2m5 0h2m1 0h3m3 0h7m-33 1h1m5 0h1m1 0h2m2 0h3m5 0h3m1 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m3 0h1m2 0h2m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m6 0h2m2 0h1m3 0h1m1 0h2m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m3 0h3m1 0h1m1 0h3m1 0h3m3 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m2 0h3m3 0h3m4 0h1m3 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-23 1h4m2 0h1m2 0h2m2 0h2m-24 1h1m4 0h3m1 0h1m1 0h2m1 0h4m1 0h1m1 0h1m1 0h2m5 0h2m-33 1h1m1 0h1m4 0h4m6 0h1m1 0h1m2 0h2m4 0h4m-32 1h1m2 0h2m1 0h2m3 0h1m3 0h1m1 0h1m2 0h2m6 0h1m1 0h1m-30 1h1m1 0h1m3 0h1m1 0h1m9 0h2m4 0h7m-31 1h2m3 0h3m2 0h3m1 0h1m1 0h2m2 0h1m1 0h1m1 0h2m5 0h1m-33 1h1m3 0h2m2 0h2m1 0h1m3 0h2m1 0h2m1 0h2m2 0h2m4 0h2m-33 1h1m1 0h1m3 0h1m1 0h2m1 0h6m4 0h2m1 0h3m2 0h3m-32 1h2m1 0h1m5 0h1m6 0h3m3 0h1m2 0h1m4 0h1m1 0h1m-33 1h1m1 0h1m1 0h1m1 0h1m2 0h2m3 0h3m2 0h1m2 0h1m1 0h2m1 0h3m2 0h1m-32 1h1m2 0h1m6 0h2m4 0h1m1 0h1m2 0h2m2 0h1m2 0h4m-32 1h6m2 0h1m2 0h2m2 0h2m1 0h2m1 0h4m1 0h1m1 0h4m-33 1h2m1 0h3m1 0h2m1 0h1m1 0h1m4 0h1m1 0h1m2 0h1m5 0h3m1 0h1m-33 1h2m2 0h4m1 0h2m1 0h8m2 0h1m1 0h1m3 0h2m1 0h2m-33 1h2m1 0h3m1 0h1m2 0h2m3 0h2m2 0h1m1 0h3m1 0h1m2 0h3m-31 1h1m1 0h2m2 0h1m1 0h1m1 0h1m4 0h4m1 0h2m2 0h1m2 0h1m1 0h1m1 0h1m-32 1h1m1 0h1m7 0h3m4 0h1m1 0h1m2 0h2m1 0h1m4 0h1m1 0h1m-33 1h2m1 0h1m2 0h4m3 0h4m5 0h1m1 0h5m-21 1h5m3 0h1m2 0h3m1 0h2m3 0h1m1 0h1m1 0h1m-33 1h7m1 0h1m2 0h2m1 0h2m2 0h1m1 0h5m1 0h1m1 0h1m1 0h1m-31 1h1m5 0h1m2 0h2m1 0h1m1 0h4m5 0h2m3 0h4m-32 1h1m1 0h3m1 0h1m2 0h1m7 0h2m2 0h2m1 0h6m1 0h1m-32 1h1m1 0h3m1 0h1m2 0h2m3 0h1m1 0h1m1 0h4m2 0h2m1 0h2m1 0h1m1 0h1m-33 1h1m1 0h3m1 0h1m3 0h1m1 0h2m1 0h1m1 0h1m1 0h2m3 0h1m2 0h2m2 0h2m-33 1h1m5 0h1m1 0h1m1 0h1m3 0h1m2 0h4m4 0h1m1 0h2m1 0h1m-31 1h7m4 0h1m1 0h1m3 0h2m1 0h1m1 0h1m1 0h4m1 0h1m1 0h1\"/></g></svg>"},{"t":"7.597309388.ZU0lNa6oJ7-o","s":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 370 370\"><g transform=\"scale(10)\"><path fill=\"#fff\" d=\"M0 0h37v37h-37z\"/><path stroke=\"#0b0b0b\" d=\"M2 2.5h7m1 0h1m4 0h2m1 0h4m1 0h1m1 0h1m2 0h7m-33 1h1m5 0h1m5 0h2m1 0h1m4 0h2m2 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m7 0h1m1 0h1m2 0h1m1 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m2 0h1m2 0h2m1 0h1m1 0h1m4 0h2m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h3m3 0h4m1 0h1m1 0h2m1 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m1 0h1m1 0h3m4 0h1m2 0h3m3 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-24 1h3m1 0h1m2 0h1m2 0h3m-21 1h7m2 0h4m2 0h3m1 0h1m1 0h1m1 0h1m2 0h2m3 0h1m-33 1h1m2 0h1m3 0h1m6 0h4m1 0h2m2 0h1m2 0h2m1 0h4m-30 1h2m1 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m2 0h3m5 0h1m1 0h1m-31 1h2m2 0h1m2 0h1m1 0h1m5 0h1m3 0h3m3 0h2m1 0h4m-32 1h1m2 0h1m2 0h1m3 0h1m1 0h1m2 0h1m2 0h5m5 0h2m1 0h1m-32 1h3m1 0h2m1 0h2m1 0h2m3 0h1m2 0h2m5 0h3m3 0h2m-33 1h1m5 0h2m1 0h1m1 0h1m1 0h4m4 0h2m1 0h3m2 0h3m-32 1h3m1 0h1m3 0h1m1 0h3m1 0h1m1 0h4m1 0h1m1 0h6m1 0h1m-31 1h1m1 0h1m1 0h1m1 0h1m2 0h3m2 0h3m2 0h1m2 0h4m1 0h3m2 0h1m-33 1h2m1 0h1m5 0h1m1 0h2m2 0h1m1 0h1m1 0h1m2 0h2m2 0h2m1 0h4m-32 1h1m1 0h1m2 0h3m2 0h2m5 0h1m3 0h1m1 0h1m1 0h3m1 0h1m-31 1h1m3 0h2m1 0h2m3 0h4m1 0h1m1 0h1m1 0h1m5 0h4m1 0h1m-32 1h1m1 0h1m1 0h4m1 0h1m4 0h5m2 0h1m5 0h2m1 0h2m-33 1h4m1 0h1m3 0h1m1 0h2m1 0h3m1 0h1m1 0h1m4 0h3m1 0h2m1 0h1m-33 1h1m5 0h2m2 0h3m3 0h3m1 0h2m2 0h1m2 0h1m1 0h1m1 0h1m-32 1h1m2 0h1m3 0h1m1 0h4m4 0h1m1 0h5m1 0h1m1 0h1m2 0h1m1 0h1m-33 1h1m2 0h4m2 0h2m4 0h1m1 0h1m1 0h2m2 0h7m1 0h2m-25 1h1m1 0h3m2 0h3m1 0h3m1 0h2m3 0h1m1 0h1m1 0h1m-33 1h7m1 0h8m2 0h1m1 0h2m1 0h2m1 0h1m1 0h1m1 0h1m-31 1h1m5 0h1m1 0h1m1 0h1m1 0h3m2 0h1m2 0h5m3 0h5m-33 1h1m1 0h3m1 0h1m1 0h1m3 0h2m3 0h2m5 0h6m1 0h1m-32 1h1m1 0h3m1 0h1m1 0h1m1 0h2m7 0h2m1 0h1m1 0h2m2 0h1m1 0h1m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m5 0h3m5 0h6m1 0h1m-30 1h1m5 0h1m1 0h5m1 0h8m4 0h1m1 0h1m1 0h1m-31 1h7m6 0h1m3 0h2m1 0h1m1 0h1m1 0h1m2 0h1m1 0h1m1 0h1\"/></g></svg>"},{"t":"7.597309389.5iDTDaeWjbbn","s":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 370 370\"><g transform=\"scale(10)\"><path fill=\"#fff\" d=\"M0 0h37v37h-37z\"/><path stroke=\"#0b0b0b\" d=\"M2 2.5h7m1 0h1m1 0h1m2 0h1m1 0h1m2 0h3m1 0h2m2 0h7m-33 1h1m5 0h1m1 0h4m3 0h1m3 0h5m2 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h1m1 0h1m2 0h3m1 0h2m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h2m1 0h2m1 0h2m2 0h2m1 0h2m3 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h3m6 0h3m6 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m3 0h1m1 0h2m4 0h2m1 0h4m1 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h4m4 0h3m2 0h1m1 0h1m-23 1h2m1 0h1m1 0h2m1 0h1m2 0h4m1 0h2m2 0h1m1 0h2m1 0h1m1 0h5m-33 1h2m1 0h1m1 0h1m3 0h1m1 0h6m1 0h1m1 0h2m2 0h4m4 0h1m-33 1h3m1 0h1m1 0h4m1 0h1m2 0h1m1 0h2m8 0h2m2 0h1m1 0h1m-33 1h1m3 0h1m4 0h1m1 0h2m2 0h1m1 0h1m2 0h2m1 0h2m1 0h1m1 0h1m-27 1h5m1 0h2m2 0h2m4 0h3m3 0h1m1 0h2m1 0h1m1 0h2m-32 1h4m2 0h1m2 0h1m2 0h2m2 0h1m2 0h1m3 0h1m1 0h2m1 0h2m1 0h1m-33 1h1m2 0h2m1 0h3m1 0h1m1 0h2m2 0h1m3 0h1m4 0h1m1 0h6m-29 1h2m2 0h1m1 0h1m1 0h3m6 0h1m1 0h2m1 0h4m1 0h1m-32 1h1m1 0h2m2 0h1m1 0h1m2 0h1m7 0h3m2 0h3m2 0h1m-30 1h1m2 0h3m1 0h1m5 0h1m1 0h1m2 0h1m2 0h2m1 0h4m4 0h1m-33 1h1m1 0h1m3 0h2m1 0h10m1 0h1m3 0h1m5 0h1m1 0h1m-28 1h1m2 0h1m2 0h1m3 0h1m1 0h2m2 0h1m1 0h3m1 0h2m2 0h2m-32 1h4m1 0h3m1 0h1m3 0h1m1 0h1m1 0h4m4 0h2m1 0h1m1 0h1m-31 1h1m7 0h3m1 0h3m1 0h1m2 0h1m5 0h2m3 0h2m-33 1h1m2 0h2m1 0h1m1 0h2m1 0h1m2 0h2m1 0h2m3 0h1m1 0h1m1 0h1m1 0h2m1 0h2m-32 1h1m1 0h1m1 0h1m1 0h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h2m-33 1h1m1 0h1m2 0h2m1 0h1m5 0h4m3 0h9m1 0h1m-24 1h1m1 0h1m2 0h1m1 0h2m1 0h1m1 0h2m2 0h1m3 0h2m1 0h2m-33 1h7m1 0h7m1 0h2m4 0h3m1 0h1m1 0h1m1 0h1m1 0h1m-33 1h1m5 0h1m4 0h1m1 0h2m3 0h5m1 0h1m3 0h1m3 0h1m-33 1h1m1 0h3m1 0h1m1 0h2m2 0h4m1 0h1m3 0h1m2 0h6m1 0h2m-33 1h1m1 0h3m1 0h1m4 0h1m1 0h2m1 0h2m1 0h2m2 0h1m4 0h2m1 0h2m-33 1h1m1 0h3m1 0h1m1 0h4m4 0h1m4 0h1m1 0h3m2 0h2m2 0h1m-33 1h1m5 0h1m1 0h4m1 0h2m1 0h1m2 0h3m1 0h4m1 0h2m1 0h1m-32 1h7m2 0h3m1 0h6m2 0h1m2 0h3m1 0h2m1 0h2\"/></g></svg>"},{"t":"7.597309390.3ouYJ8FGWVjV","s":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 370 370\"><g transform=\"scale(10)\"><path fill=\"#fff\" d=\"M0 0h37v37h-37z\"/><path stroke=\"#0b0b0b\" d=\"M2 2.5h7m1 0h4m6 0h1m1 0h3m3 0h7m-33 1h1m5 0h1m1 0h1m3 0h3m2 0h2m1 0h1m1 0h1m1 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m2 0h1m6 0h1m1 0h2m1 0h3m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m2 0h1m10 0h1m2 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m3 0h3m2 0h1m1 0h1m1 0h5m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m2 0h3m5 0h1m4 0h1m3 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-23 1h1m1 0h2m1 0h1m3 0h2m2 0h1m-23 1h1m4 0h3m1 0h1m1 0h2m2 0h3m1 0h1m1 0h4m5 0h2m-31 1h1m1 0h1m2 0h2m1 0h1m2 0h1m5 0h1m1 0h3m4 0h4m-32 1h2m1 0h1m1 0h3m2 0h2m1 0h1m1 0h1m1 0h1m2 0h2m6 0h1m1 0h1m-31 1h2m1 0h3m1 0h1m5 0h1m4 0h3m1 0h1m2 0h7m-32 1h1m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1m3 0h1m1 0h2m2 0h1m1 0h4m5 0h1m-33 1h2m1 0h3m1 0h3m1 0h2m2 0h1m2 0h1m1 0h2m1 0h1m1 0h2m4 0h2m-33 1h1m1 0h1m3 0h1m2 0h1m3 0h2m5 0h3m2 0h2m2 0h3m-32 1h3m4 0h3m1 0h2m3 0h4m2 0h4m4 0h1m1 0h1m-33 1h1m3 0h1m1 0h1m2 0h3m2 0h1m1 0h1m5 0h1m1 0h2m1 0h3m2 0h1m-32 1h1m9 0h2m4 0h1m1 0h1m1 0h3m2 0h1m2 0h4m-31 1h5m3 0h1m1 0h1m3 0h1m1 0h3m1 0h4m1 0h1m1 0h4m-32 1h1m1 0h1m3 0h2m3 0h1m5 0h2m5 0h1m2 0h3m1 0h1m-33 1h1m2 0h1m2 0h5m4 0h1m2 0h3m7 0h2m1 0h2m-33 1h3m1 0h1m5 0h3m2 0h2m4 0h1m1 0h3m2 0h3m-31 1h1m2 0h1m2 0h1m1 0h1m1 0h3m2 0h4m1 0h2m2 0h1m2 0h1m1 0h1m1 0h1m-32 1h1m2 0h1m3 0h1m2 0h3m2 0h1m1 0h1m1 0h2m1 0h2m1 0h1m4 0h1m1 0h1m-33 1h2m1 0h1m2 0h4m1 0h1m1 0h2m1 0h1m2 0h1m2 0h1m1 0h5m-21 1h5m3 0h1m2 0h3m1 0h2m3 0h1m1 0h1m1 0h1m-33 1h7m1 0h5m1 0h2m1 0h2m1 0h2m1 0h2m1 0h1m1 0h1m1 0h1m-31 1h1m5 0h1m2 0h2m1 0h2m1 0h2m1 0h1m3 0h3m3 0h4m-32 1h1m1 0h3m1 0h1m3 0h1m1 0h1m3 0h1m1 0h1m2 0h2m1 0h6m1 0h1m-32 1h1m1 0h3m1 0h1m2 0h4m3 0h1m1 0h1m1 0h2m2 0h2m1 0h2m1 0h1m1 0h1m-33 1h1m1 0h3m1 0h1m3 0h1m2 0h1m1 0h3m1 0h2m3 0h1m2 0h2m2 0h2m-33 1h1m5 0h1m1 0h1m1 0h3m1 0h1m1 0h5m6 0h2m1 0h1m-31 1h7m4 0h1m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1m1 0h1m2 0h1m1 0h1m1 0h1\"/></g></svg>"},{"t":"7.597309391.JCCW9mA7pMra","s":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 370 370\"><g transform=\"scale(10)\"><path fill=\"#fff\" d=\"M0 0h37v37h-37z\"/><path stroke=\"#0b0b0b\" d=\"M2 2.5h7m2 0h3m5 0h2m1 0h3m3 0h7m-33 1h1m5 0h1m1 0h2m2 0h1m4 0h3m1 0h1m2 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m6 0h2m3 0h1m2 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h3m1 0h2m5 0h2m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m7 0h1m1 0h2m1 0h3m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m2 0h1m1 0h1m3 0h1m4 0h1m2 0h1m2 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h1m1 0h3m1 0h2m3 0h1m3 0h2m-24 1h1m1 0h4m1 0h1m3 0h1m2 0h1m1 0h2m1 0h1m3 0h3m1 0h2m1 0h1m-32 1h1m1 0h1m4 0h4m8 0h1m2 0h2m4 0h4m-32 1h1m1 0h2m2 0h3m1 0h1m3 0h2m1 0h2m3 0h2m2 0h1m1 0h3m1 0h1m-30 1h2m2 0h1m3 0h1m4 0h2m1 0h2m2 0h1m1 0h3m2 0h2m-31 1h3m2 0h2m1 0h1m1 0h5m1 0h2m1 0h1m1 0h5m5 0h1m-33 1h1m2 0h2m2 0h4m2 0h1m1 0h1m2 0h2m1 0h2m-23 1h2m1 0h2m1 0h2m1 0h2m1 0h1m1 0h3m2 0h1m1 0h1m2 0h1m1 0h1m1 0h3m-31 1h4m3 0h1m1 0h1m7 0h2m1 0h1m1 0h4m4 0h1m1 0h1m-33 1h1m3 0h8m4 0h2m2 0h1m1 0h1m1 0h5m-29 1h2m3 0h1m3 0h2m1 0h2m2 0h2m1 0h1m1 0h1m4 0h1m1 0h1m1 0h3m-33 1h1m1 0h2m2 0h1m5 0h2m2 0h10m1 0h1m1 0h4m-32 1h4m4 0h1m2 0h3m2 0h2m1 0h1m1 0h1m3 0h1m1 0h4m-31 1h1m4 0h1m1 0h1m1 0h1m1 0h1m1 0h2m1 0h2m1 0h1m3 0h2m3 0h1m2 0h1m-33 1h1m1 0h1m1 0h1m2 0h1m3 0h2m1 0h1m1 0h1m1 0h2m1 0h2m2 0h1m2 0h3m-31 1h1m1 0h2m1 0h2m3 0h2m2 0h3m1 0h1m2 0h1m1 0h2m1 0h2m3 0h2m-33 1h1m3 0h2m1 0h1m3 0h2m2 0h1m3 0h2m4 0h1m2 0h3m1 0h1m-33 1h4m2 0h1m1 0h2m3 0h2m1 0h1m2 0h1m2 0h1m1 0h5m-21 1h1m1 0h3m1 0h1m1 0h2m3 0h1m1 0h2m3 0h1m1 0h2m-32 1h7m3 0h3m1 0h4m1 0h3m1 0h2m1 0h1m1 0h1m1 0h2m-32 1h1m5 0h1m1 0h1m1 0h1m1 0h5m1 0h1m4 0h2m3 0h4m-32 1h1m1 0h3m1 0h1m1 0h7m1 0h2m3 0h8m2 0h2m-33 1h1m1 0h3m1 0h1m1 0h5m1 0h1m1 0h4m1 0h5m1 0h1m1 0h2m1 0h1m-33 1h1m1 0h3m1 0h1m3 0h1m1 0h2m3 0h1m1 0h1m4 0h1m2 0h2m2 0h2m-33 1h1m5 0h1m1 0h1m1 0h1m1 0h2m1 0h6m4 0h4m1 0h3m-33 1h7m3 0h2m3 0h6m3 0h1m2 0h3\"/></g></svg>"},{"t":"7.597309392.G6xxh9nADaZL","s":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 370 370\"><g transform=\"scale(10)\"><path fill=\"#fff\" d=\"M0 0h37v37h-37z\"/><path stroke=\"#0b0b0b\" d=\"M2 2.5h7m1 0h1m1 0h1m4 0h1m1 0h7m2 0h7m-33 1h1m5 0h1m1 0h1m2 0h1m2 0h2m3 0h3m1 0h1m2 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h3m2 0h3m2 0h3m1 0h2m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h4m1 0h1m1 0h1m1 0h4m1 0h1m1 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h2m1 0h1m3 0h1m1 0h2m4 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m3 0h1m1 0h2m2 0h1m1 0h6m2 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h5m2 0h5m1 0h1m2 0h1m-24 1h2m1 0h1m1 0h2m1 0h1m1 0h4m2 0h2m2 0h1m2 0h1m1 0h1m1 0h5m-33 1h2m1 0h3m5 0h2m1 0h3m1 0h1m1 0h1m3 0h4m4 0h1m-32 1h2m1 0h1m1 0h3m1 0h2m1 0h1m2 0h1m5 0h1m3 0h2m2 0h1m1 0h1m-32 1h1m3 0h1m5 0h3m1 0h1m1 0h1m2 0h2m1 0h2m1 0h1m1 0h1m-28 1h2m1 0h1m1 0h1m2 0h1m2 0h2m4 0h4m4 0h2m1 0h1m1 0h2m-32 1h2m1 0h1m3 0h1m1 0h5m2 0h1m2 0h1m5 0h2m1 0h2m1 0h1m-33 1h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h2m6 0h1m4 0h1m1 0h6m-31 1h1m1 0h2m4 0h1m2 0h2m1 0h1m2 0h3m2 0h1m1 0h4m1 0h1m-32 1h1m1 0h2m2 0h3m2 0h1m8 0h2m2 0h3m2 0h1m-27 1h3m1 0h1m7 0h1m1 0h2m3 0h1m1 0h4m4 0h1m-33 1h3m1 0h1m1 0h2m1 0h1m1 0h2m1 0h5m1 0h1m1 0h1m1 0h1m5 0h1m1 0h1m-29 1h1m3 0h4m1 0h1m1 0h1m1 0h2m2 0h1m1 0h2m2 0h2m2 0h2m-32 1h2m1 0h7m8 0h4m1 0h1m1 0h2m1 0h1m1 0h1m-30 1h2m3 0h3m1 0h10m1 0h3m1 0h2m3 0h2m-33 1h1m3 0h1m1 0h4m2 0h1m1 0h1m2 0h2m3 0h1m1 0h1m1 0h1m1 0h2m1 0h2m-32 1h3m1 0h1m3 0h2m1 0h2m1 0h2m1 0h2m1 0h2m1 0h1m2 0h1m1 0h1m1 0h2m-33 1h1m1 0h1m2 0h2m1 0h1m5 0h1m1 0h2m3 0h9m1 0h1m-24 1h1m1 0h1m4 0h2m1 0h1m1 0h1m3 0h1m3 0h2m1 0h2m-33 1h7m1 0h6m2 0h1m5 0h3m1 0h1m1 0h1m1 0h1m1 0h1m-33 1h1m5 0h1m3 0h2m1 0h1m3 0h6m1 0h1m3 0h1m3 0h1m-33 1h1m1 0h3m1 0h1m1 0h2m3 0h3m1 0h1m2 0h2m2 0h6m1 0h2m-33 1h1m1 0h3m1 0h1m6 0h1m3 0h4m2 0h1m4 0h2m1 0h2m-33 1h1m1 0h3m1 0h1m1 0h5m3 0h1m3 0h2m1 0h3m2 0h2m2 0h1m-33 1h1m5 0h1m1 0h3m2 0h2m1 0h1m3 0h2m1 0h3m2 0h2m1 0h1m-32 1h7m2 0h3m1 0h2m1 0h4m1 0h1m2 0h1m3 0h2m1 0h2\"/></g></svg>"}];
+const ROTATE = 3000;
+const qrbox = document.getElementById('qrbox');
+const ticker = document.getElementById('ticker');
+const tokenline = document.getElementById('tokenline');
+let idx = 0, live = true;
+
+function paintQR(){
+  if(!live) return;
+  const f = FRAMES[idx % FRAMES.length];
+  qrbox.innerHTML = f.s;
+  tokenline.textContent = f.t;
+  ticker.style.transition = 'none';
+  ticker.style.width = '100%';
+  requestAnimationFrame(() => {
+    ticker.style.transition = `width ${ROTATE}ms linear`;
+    ticker.style.width = '0%';
+  });
+  idx++;
+}
+paintQR();
+setInterval(paintQR, ROTATE);
+
+/* ---------- ro'yxat ---------- */
+const STUDENTS = [
+  {name:'Karimov Aziz',      status:'present', meta:'09:04 · passkey · 12 m'},
+  {name:'Yusupova Malika',   status:'present', meta:'09:05 · yuz · 18 m'},
+  {name:'Toshmatov Bekzod',  status:'pending', meta:'—'},
+  {name:'Mamatqulov Zafar',  status:'pending', meta:'—'},
+];
+const LABEL = {present:'Keldi', pending:'Kutilmoqda', rejected:'Bekor qilindi'};
+const CLS   = {present:'ok',    pending:'',          rejected:'bad'};
+
+function paintRoster(){
+  document.getElementById('roster').innerHTML = STUDENTS.map(s => `
+    <div class="row">
+      <span class="who"><b>${s.name}</b><span class="sub">${s.meta}</span></span>
+      <span class="pill ${CLS[s.status]}">${LABEL[s.status]}</span>
+    </div>`).join('');
+  const n = STUDENTS.filter(s => s.status === 'present').length;
+  document.getElementById('count').textContent = `${n} / ${STUDENTS.length} keldi`;
+}
+paintRoster();
+
+/* ---------- aldash simulyatori ---------- */
+const verdict = document.getElementById('verdict');
+const buttons = [...document.querySelectorAll('.try')];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function render(kind, title, body, trace){
+  verdict.className = 'verdict' + (kind ? ' ' + kind : '');
+  verdict.innerHTML = `
+    <div class="head"><span class="mk" style="${kind ? '' : 'background:var(--muted)'}">${
+      kind === 'ok' ? '✓' : kind === 'bad' ? '✕' : '…'}</span>${title}</div>
+    <div class="body">${body}</div>
+    ${trace ? `<div class="trace">${trace}</div>` : ''}`;
+}
+
+const SCENARIOS = {
+  shot: async () => {
+    const stolen = FRAMES[(idx - 1 + FRAMES.length) % FRAMES.length].t;
+    render('', 'Skrinshot olindi', 'Kod nusxalandi, do\'stingizga yuborilmoqda…',
+      `token = ${stolen}`);
+    await sleep(900);
+    render('', 'Do\'stingiz ochdi', 'Telegramda ko\'rdi, skanerladi — 11 soniya o\'tdi.',
+      `token = ${stolen}<br>oyna farqi = 4 → qabul chegarasi 4`);
+    await sleep(1100);
+    render('bad', 'Rad etildi — QR eskirgan',
+      'Token oynasi serverning joriy oynasidan to\'rt qadam orqada. ' +
+      'Kod allaqachon o\'lgan.',
+      'HTTP 400 · token_expired<br>«QR kod eskirgan — ekrandagi yangi kodni skanerlang»');
+  },
+
+  home: async () => {
+    render('', 'Joylashuv so\'ralmoqda', 'Brauzer GPS ni o\'qiyapti…', 'navigator.geolocation');
+    await sleep(900);
+    render('', 'Koordinata olindi', 'Server auditoriyagacha masofani hisoblayapti.',
+      'lat 41.3100, lng 69.3010 · aniqlik 12 m');
+    await sleep(900);
+    render('bad', 'Rad etildi — juda uzoq',
+      'Auditoriya A-301 dan 8 kilometr narida turibsiz. Geofence radiusi 120 metr.',
+      'HTTP 403 · too_far · masofa ≈ 8025 m<br>«Siz auditoriyadan uzoqdasiz (~8025 m)»');
+  },
+
+  friend: async () => {
+    render('', 'QR qabul qilindi', 'Do\'stingiz auditoriyada, kod yangi. GPS o\'tdi.',
+      'masofa ≈ 14 m · OK');
+    await sleep(900);
+    render('', 'Shaxs tekshirilmoqda', 'Bu qurilmada sizning passkey\'ingiz yo\'q — ' +
+      'tizim yuz tekshiruviga o\'tdi.', 'challenge: to\'g\'ri qarang → o\'ngga buring');
+    await sleep(1200);
+    render('bad', 'Rad etildi — yuz mos kelmadi',
+      'Kadrdagi yuz sizning shablonimdan uzoq. Do\'stingiz o\'z yuzi bilan ' +
+      'sizning davomatingizni belgilay olmaydi.',
+      'HTTP 403 · face_mismatch · kosinus masofa 0.71 (chegara 0.38)<br>' +
+      '«Yuz mos kelmadi — bu sizning akkauntingiz emas»');
+  },
+
+  real: async () => {
+    const t = FRAMES[(idx - 1 + FRAMES.length) % FRAMES.length].t;
+    render('', 'QR skanerlandi', 'Imzo to\'g\'ri, oyna yangi.', `token = ${t} · yosh 2s`);
+    await sleep(800);
+    render('', 'Joylashuv tasdiqlandi', 'A-301 dan 14 metr narida.',
+      'masofa 14 m · radius 120 m · aniqlik 9 m');
+    await sleep(800);
+    render('', 'Face ID so\'ralmoqda', 'Telefoningiz imzolamoqda…', 'WebAuthn assertion');
+    await sleep(1000);
+    const me = STUDENTS.find(s => s.name === 'Mamatqulov Zafar');
+    me.status = 'present';
+    me.meta = new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})
+      + ' · passkey · 14 m';
+    paintRoster();
+    render('ok', 'Davomat belgilandi',
+      'Ismingiz o\'qituvchi ekranida paydo bo\'ldi — yuqoridagi ro\'yxatga qarang.',
+      'HTTP 200 · method=passkey · flagged=false');
+  },
+};
+
+buttons.forEach(b => b.addEventListener('click', async () => {
+  buttons.forEach(x => x.disabled = true);
+  try { await SCENARIOS[b.dataset.try](); }
+  finally { buttons.forEach(x => x.disabled = false); }
+}));
+</script>
+</body>
+</html>

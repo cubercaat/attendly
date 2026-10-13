@@ -5,6 +5,9 @@ O'qituvchi ekranda **har 3 soniyada yangilanadigan** QR ko'rsatadi; talaba uni
 skanerlaydi, telefon joylashuvni va shaxsni tasdiqlaydi — shundan keyingina
 davomat yoziladi.
 
+**Demo sahifa:** https://cubercaat.github.io/attendly/ — QR aylanishini va
+aldash urinishlarini brauzerda sinab ko'rasiz (statik, backend kerak emas).
+
 Arxitektura va baza sxemasi: **[ARCHITECTURE.md](ARCHITECTURE.md)**
 
 ---
@@ -240,3 +243,20 @@ universitet tarmog'i tashqi saytlarni bloklasa ham ishlaydi.
 - [ ] Admin paneli UI (hozircha API)
 - [ ] PWA — "ilovaga o'xshash", offline ekran
 - [ ] Dars jadvalini bir marta kiritib, darslarni avtomatik yaratish
+
+
+---
+
+## GitHub Pages (demo sahifa)
+
+`docs/index.html` — loyihaning statik ko'rgazmasi: aylanuvchi QR, aldash
+simulyatori, olti qatlam. Backend talab qilmaydi.
+
+Yoqish: repo → **Settings → Pages** → Source: `Deploy from a branch` →
+Branch: `main`, papka: `/docs` → Save.
+
+Bir-ikki daqiqadan keyin: `https://cubercaat.github.io/attendly/`
+
+> Haqiqiy tizim (FastAPI + PostgreSQL) GitHub Pages da ishlamaydi — Pages
+> faqat statik fayl tarqatadi. Ishlaydigan nusxa uchun VPS yoki Render/Railway
+> kerak; `docker-compose.yml` tayyor.
