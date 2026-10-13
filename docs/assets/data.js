@@ -34,7 +34,21 @@ const FIRST_M = ['Sardor', 'Jasur', 'Bekzod', 'Otabek', 'Rustam', 'Aziz', 'Dilsh
 const FIRST_F = ['Malika', 'Nilufar', 'Sevinch', 'Zilola', 'Dilnoza', 'Madina', 'Gulnora', 'Shahnoza', 'Kamola', 'Feruza', 'Laylo', 'Mohira', 'Nargiza', 'Aziza'];
 const LAST = ['Karimov', 'Toshmatov', 'Rahimov', 'Sobirov', 'Ergashev', 'Qodirov', 'Xolmatov', 'Sattorov', 'Yusupov', 'Umarov', 'Hasanov', 'Ismoilov', 'Normatov', 'Tursunov', 'Abdullayev', 'Ruziyev', 'Saidov', 'Mirzayev', 'Juraev', 'Nurmatov', 'Aliyev', 'Botirov', 'Davronov', 'Egamberdiyev'];
 
-const SHIFT = [1, 2, 0, 3];   // CYB3-26 asl jadval, qolganlari siljitilgan
+const SHIFT = [1, 2, 0, 3];   // amaliyot: CYB3-26 asl jadval, qolganlari siljitilgan
+/* Ma'ruza oqimlari: bitta xona, bitta QR, bir nechta guruh (guruh id lari) */
+const LEC_GROUPS = { MATH: [1, 2, 3, 4], PHY: [1, 2, 3], PROG: [2, 3, 4], NHU: [1, 2, 3, 4], PHS: [1, 2, 3, 4] };
+function planFor(day) {
+  const out = [];
+  TT.forEach(([dd, s0, sub, kind, tch, room]) => {
+    if (dd !== day) return;
+    if (kind === 'lec') return out.push({ groups: LEC_GROUPS[sub], sub, kind, tch, room, slot: s0 });
+    [1, 2, 3, 4].forEach((gid, gi) => {
+      const rn = gid == 3 ? room : ROOM_NAMES[(ROOM_NAMES.indexOf(room) + gi * 3) % 33];
+      out.push({ groups: [gid], sub, kind, tch, room: rn, slot: ((s0 - 1 + SHIFT[gi]) % 6) + 1 });
+    });
+  });
+  return out;
+}   // CYB3-26 asl jadval, qolganlari siljitilgan
 function prng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 function genNames(n, seed) {
@@ -74,22 +88,22 @@ function seed() {
   const me = students[3].find(u => u.name == 'Mamatqulov Zafar'); me.login = 'student'; me.pass = 'student123'; me.rate = .9;
   Object.values(students).flat().forEach((u, i) => { if (!u.login) { u.login = 's' + u.id; u.pass = 'pass' + u.id; } });
 
-  // darslar: joriy hafta + 2 hafta tarix, har guruh uchun
+  // darslar: joriy hafta + 2 hafta tarix. Ma'ruza = oqim (3-4 guruh bitta xonada, bitta dars)
   const today = dayStart(Date.now()), dow = (new Date().getDay() + 6) % 7;       // 0=Du
   const monday = today - dow * 864e5;
   const lessons = [], att = []; let lid = 1;
-  groups.forEach((g, gi) => {
-    for (let w = -2; w <= 0; w++) TT.forEach(([day, slot0, sub, kind, tch, room]) => {
-      const slot = (room == 'Prerecorded') ? slot0 : ((slot0 - 1 + SHIFT[gi]) % 6) + 1;
-      const dayMs = monday + w * 7 * 864e5 + (day - 1) * 864e5;
-      if (dayMs > today) return;
-      const isToday = dayMs == today, rn = room == 'Prerecorded' || gi == 2 ? room : ROOM_NAMES[(ROOM_NAMES.indexOf(room) + gi * 3) % 33];
-      const l = { id: lid++, subject_id: subjId(sub), group_id: g.id, room_id: roomId(rn), teacher_id: teacherId(tch), pair: slot, kind, starts: lessonTime(dayMs, slot), open: false, closed: !isToday, secret: 's' + lid + Math.floor(r() * 1e9).toString(36) };
+  for (let w = -2; w <= 0; w++) for (let day = 1; day <= 6; day++) {
+    const dayMs = monday + w * 7 * 864e5 + (day - 1) * 864e5;
+    if (dayMs > today) continue;
+    planFor(day).forEach(p => {
+      const closed = dayMs != today;
+      const l = { id: lid++, subject_id: subjId(p.sub), group_id: p.groups[0], group_ids: p.groups, room_id: roomId(p.room), teacher_id: teacherId(p.tch),
+        pair: p.slot, kind: p.kind, starts: lessonTime(dayMs, p.slot), open: false, closed, secret: 's' + lid + Math.floor(r() * 1e9).toString(36) };
       lessons.push(l);
-      if (l.closed) students[g.id].forEach(u => { const x = r(), st = x < u.rate ? 'present' : (x < u.rate + .05 ? 'late' : 'absent');
-        att.push({ lesson_id: l.id, user_id: u.id, status: st, method: st == 'absent' ? '-' : (r() < .7 ? 'passkey' : 'face'), distance: st == 'absent' ? null : 20 + Math.floor(r() * 70), flagged: false, at: l.starts }); });
+      if (closed) p.groups.forEach(gid => students[gid].forEach(u => { const x = r(), st = x < u.rate ? 'present' : (x < u.rate + .05 ? 'late' : 'absent');
+        att.push({ lesson_id: l.id, user_id: u.id, status: st, method: st == 'absent' ? '-' : (r() < .7 ? 'passkey' : 'face'), distance: st == 'absent' ? null : 20 + Math.floor(r() * 70), flagged: false, at: l.starts }); }));
     });
-  });
-  return { v: 2, users, groups, rooms, subjects, lessons, attendance: att, audit: [], invites: [], todayKey: dayKey(Date.now()),
+  }
+  return { v: 3, users, groups, rooms, subjects, lessons, attendance: att, audit: [], invites: [], todayKey: dayKey(Date.now()),
     nid: { user: uid + 10, group: 10, room: rooms.length + 10, subject: 20, lesson: lid + 10, invite: 1 } };
 }

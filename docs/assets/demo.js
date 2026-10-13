@@ -1,12 +1,12 @@
 /* Attendly demo — barcha ma'lumot brauzerda (localStorage). Backend kerak emas. */
-const KEY='attendly_demo_v2', SESS='attendly_demo_sess';
+const KEY='attendly_demo_v3', SESS='attendly_demo_sess';
 const STEP=3, WINDOWS=4;           // QR har 3s, 4 oyna = 12s
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const BASE=location.pathname.replace(/\/(admin|teacher|student)\/.*$/,'/').replace(/[^/]*$/,'');
 
 const DB={
-  get(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.v==2){ensureToday(d);return d}}catch(e){}const d=seed();localStorage.setItem(KEY,JSON.stringify(d));return d},
+  get(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.v==3){ensureToday(d);return d}}catch(e){}const d=seed();localStorage.setItem(KEY,JSON.stringify(d));return d},
   save(d){localStorage.setItem(KEY,JSON.stringify(d))},
   reset(){localStorage.removeItem(KEY);localStorage.removeItem('attendly_live_qr')},
   id(d,k){return d.nid[k]++},
@@ -62,28 +62,25 @@ function renderQR(el,text){const q=qrcode(0,'M');q.addData(text);q.make();el.inn
 function ensureToday(d){
   if(d.todayKey===dayKey(Date.now()))return;
   d.lessons.forEach(l=>{if(!l.closed&&dayStart(l.starts)<dayStart(Date.now())){l.closed=true;l.open=false}});
-  const today=dayStart(Date.now()),dow=new Date().getDay();
-  d.groups.forEach((g,gi)=>TT.forEach(([day,slot0,sub,kind,tch,room])=>{
-    if(day%7!==dow)return;
-    const slot=room=='Prerecorded'?slot0:((slot0-1+SHIFT[gi])%6)+1,rn=room=='Prerecorded'||g.code=='CYB3-26'?room:ROOM_NAMES[(ROOM_NAMES.indexOf(room)+gi*3)%33];
-    const t=d.users.find(u=>u.login===tch),sj=d.subjects.find(x=>x.key===sub),rm=d.rooms.find(x=>x.name===rn);
-    if(t&&sj&&rm)d.lessons.push({id:DB.id(d,'lesson'),subject_id:sj.id,group_id:g.id,room_id:rm.id,teacher_id:t.id,pair:slot,kind,starts:lessonTime(today,slot),open:false,closed:false,secret:'n'+Math.random().toString(36).slice(2)});
-  }));
+  const today=dayStart(Date.now());
+  planFor(new Date().getDay()).forEach(p=>{
+    const t=d.users.find(u=>u.login===p.tch),sj=d.subjects.find(x=>x.key===p.sub),rm=d.rooms.find(x=>x.name===p.room);
+    if(t&&sj&&rm)d.lessons.push({id:DB.id(d,'lesson'),subject_id:sj.id,group_id:p.groups[0],group_ids:p.groups,room_id:rm.id,teacher_id:t.id,pair:p.slot,kind:p.kind,starts:lessonTime(today,p.slot),open:false,closed:false,secret:'n'+Math.random().toString(36).slice(2)});
+  });
   d.todayKey=dayKey(Date.now());localStorage.setItem(KEY,JSON.stringify(d));
 }
 const KIND_UZ={lec:"ma'ruza",prac:'amaliyot'};
+const lessonGroups=l=>l.group_ids||[l.group_id];
+const groupCodes=(d,l)=>lessonGroups(l).map(g=>by(d.groups,g)?.code).join(', ');
 const lessonName=(d,l)=>(by(d.subjects,l.subject_id)?.name||'Dars')+(l.kind?' ('+KIND_UZ[l.kind]+')':'');
 const isToday=l=>dayKey(l.starts)===dayKey(Date.now());
-/* haftalik jadval (joriy hafta, guruh bo'yicha) */
+/* haftalik jadval (guruh bo'yicha). Ma'ruzada boshqa guruhlar ham ko'rsatiladi */
 function ttGrid(d,gid){
-  const today=dayStart(Date.now()),mon=today-((new Date().getDay()+6)%7)*864e5;
-  const cell={};d.lessons.filter(l=>l.group_id==gid&&l.starts>=mon&&l.starts<mon+7*864e5).forEach(l=>{const k=Math.round((dayStart(l.starts)-mon)/864e5)+'_'+l.pair;cell[k]=l});
-  // kelgusi kunlar bazada yo'q — jadval shablonidan to'ldiramiz
-  const gi=d.groups.findIndex(g=>g.id==gid);
-  TT.forEach(([day,s0,sub,kind,tch,room])=>{const slot=room=='Prerecorded'?s0:((s0-1+SHIFT[gi])%6)+1,k=(day-1)+'_'+slot;if(!cell[k]){const rn=room=='Prerecorded'||d.groups[gi]?.code=='CYB3-26'?room:ROOM_NAMES[(ROOM_NAMES.indexOf(room)+gi*3)%33];cell[k]={_sub:SUBJECT_NAMES[sub],kind,_t:d.users.find(u=>u.login===tch)?.name,_r:rn}}});
-  const rows=[];for(let s=1;s<=8;s++){if(![...Array(6)].some((_,dd)=>cell[dd+'_'+s]))continue;
+  const cell={};
+  for(let day=1;day<=6;day++)planFor(day).filter(p=>p.groups.includes(+gid)).forEach(p=>{cell[(day-1)+'_'+p.slot]=p});
+  const rows=[];for(let s=1;s<=8;s++){if(![0,1,2,3,4,5].some(dd=>cell[dd+'_'+s]))continue;
     rows.push([`<b>${s}</b><br><span class="muted sm">${SLOTS[s]}</span>`,...[0,1,2,3,4,5].map(dd=>{const c=cell[dd+'_'+s];if(!c)return '';
-      const nm=c._sub||by(d.subjects,c.subject_id)?.name,t=c._t||by(d.users,c.teacher_id)?.name,rn=c._r||by(d.rooms,c.room_id)?.name;
-      return `<div class="slot"><b>${esc(nm)}</b> <span class="muted">${c.kind?KIND_UZ[c.kind]:''}</span><br><span class="sm muted">${esc(t)} · ${esc(rn)}</span></div>`})])}
+      const others=c.groups.length>1?`<br><span class="tag n">oqim: ${c.groups.map(g=>by(d.groups,g)?.code.replace('-26','')).join(' + ')}</span>`:'';
+      return `<div class="slot"><b>${esc(SUBJECT_NAMES[c.sub])}</b> <span class="muted">${KIND_UZ[c.kind]}</span><br><span class="sm muted">${esc(d.users.find(u=>u.login===c.tch)?.name)} · ${esc(c.room)}</span>${others}</div>`})])}
   return table(['Juft.',...DAYS.slice(1,7)],rows);
 }

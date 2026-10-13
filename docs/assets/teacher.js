@@ -2,7 +2,7 @@ const U = guard(['teacher', 'starosta', 'super_admin']);
 if (U) {
   let tab = 'today', openId = null, timer = null;
   const TABS = [['today', 'Bugungi darslar'], ['week', 'Hafta jadvali'], ['new', 'Yangi dars'], ['history', 'Tarix']];
-  const mine = (d, l) => U.role == 'starosta' ? l.group_id == U.group_id : (U.role == 'super_admin' || U.all || l.teacher_id == U.id);
+  const mine = (d, l) => U.role == 'starosta' ? lessonGroups(l).includes(U.group_id) : (U.role == 'super_admin' || U.all || l.teacher_id == U.id);
 
   function draw() {
     clearInterval(timer);
@@ -12,7 +12,7 @@ if (U) {
     if (openId) return qrView(d, el);
     ({ today, week, new: newLesson, history })[tab](d, el);
   }
-  const lessonRow = (d, l) => [`<b>${l.pair}</b> <span class="muted sm">${SLOTS[l.pair] || ''}</span>`, esc(lessonName(d, l)), esc(by(d.groups, l.group_id)?.code),
+  const lessonRow = (d, l) => [`<b>${l.pair}</b> <span class="muted sm">${SLOTS[l.pair] || ''}</span>`, esc(lessonName(d, l)), esc(groupCodes(d, l)),
     esc(by(d.rooms, l.room_id)?.name || '—')];
 
   function today(d, el) {
@@ -22,7 +22,7 @@ if (U) {
       "Bugun darsingiz yo'q (yakshanba yoki dars tugagan). «Yangi dars» bo'limidan demo dars yarating.")}</div>`;
     $$('[data-o]', el).forEach(b => b.onclick = () => {
       const d = DB.get(), l = by(d.lessons, b.dataset.o);
-      if (!l.open) { l.open = true; audit(d, `Dars ochildi: ${by(d.subjects, l.subject_id).name} (${by(d.groups, l.group_id).code})`); DB.save(d); }
+      if (!l.open) { l.open = true; audit(d, `Dars ochildi: ${by(d.subjects, l.subject_id).name} (${groupCodes(d, l)})`); DB.save(d); }
       openId = l.id; draw();
     });
   }
@@ -36,13 +36,14 @@ if (U) {
     const groups = U.role == 'starosta' ? d.groups.filter(g => g.id == U.group_id) : d.groups;
     el.innerHTML = `<form class="card"><h2>Yangi dars</h2><div class="row">
       <label>Fan<select name="s">${opt(d.subjects, x => x.name)}</select></label>
-      <label>Guruh<select name="g">${opt(groups, x => x.code)}</select></label>
+      <label>Guruh(lar) <span class="muted">— ma'ruza uchun bir nechtasini tanlang (Ctrl)</span><select name="g" multiple size="4">${opt(groups, x => x.code)}</select></label>
       <label>Xona<select name="r">${opt(d.rooms, x => x.name)}</select></label>
       <label>Juftlik<input name="p" type="number" min="1" max="6" value="1" required></label>
       <button class="btn p">Yaratish</button></div></form>`;
     $('form', el).onsubmit = e => {
       e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)), d = DB.get();
-      d.lessons.push({ id: DB.id(d, 'lesson'), subject_id: +f.s, group_id: +f.g, room_id: +f.r, teacher_id: U.id, pair: +f.p, starts: Date.now(), open: false, closed: false, secret: 'k' + Math.random().toString(36).slice(2) });
+      const gs = [...$('select[name=g]').selectedOptions].map(o => +o.value); if (!gs.length) return toast('Kamida bitta guruh tanlang');
+      d.lessons.push({ id: DB.id(d, 'lesson'), subject_id: +f.s, group_id: gs[0], group_ids: gs, room_id: +f.r, teacher_id: U.id, pair: +f.p, starts: Date.now(), open: false, closed: false, secret: 'k' + Math.random().toString(36).slice(2) });
       DB.save(d); toast('Dars yaratildi'); tab = 'today'; draw();
     };
   }
@@ -50,14 +51,15 @@ if (U) {
     const ls = d.lessons.filter(l => l.closed && mine(d, l)).sort((a, b) => b.starts - a.starts).slice(0, 30);
     el.innerHTML = `<div class="card"><h2>Yopilgan darslar</h2>${table(['Sana', 'Fan', 'Guruh', 'Kelgan'],
       ls.map(l => { const a = d.attendance.filter(x => x.lesson_id == l.id), p = a.filter(x => x.status == 'present').length;
-        return [fmtD(l.starts), esc(by(d.subjects, l.subject_id)?.name), esc(by(d.groups, l.group_id)?.code), `${p}/${a.length}`]; }))}</div>`;
+        return [fmtD(l.starts), esc(by(d.subjects, l.subject_id)?.name), esc(groupCodes(d, l)), `${p}/${a.length}`]; }))}</div>`;
   }
 
   function qrView(d, el) {
     const l = by(d.lessons, openId), room = by(d.rooms, l.room_id);
     el.innerHTML = `<button class="btn sm" id="back">← Darslar</button>
-    <div class="card" style="text-align:center;margin-top:12px"><h2>${esc(lessonName(d, l))} · ${esc(by(d.groups, l.group_id)?.code)}</h2>
+    <div class="card" style="text-align:center;margin-top:12px"><h2>${esc(lessonName(d, l))} · ${esc(groupCodes(d, l))}</h2>
       <p class="muted sm">${esc(room?.name || '')} · ${SLOTS[l.pair] || ''} · QR har ${STEP} soniyada yangilanadi</p>
+      ${lessonGroups(l).length > 1 ? `<p><span class="tag ok">Oqim darsi: ${lessonGroups(l).length} guruh bitta xonada — bitta QR hammaga</span></p>` : ''}
       <div class="qrbox" id="qr"></div><div class="bar" style="max-width:300px;margin:12px auto"><i id="cd"></i></div>
       <p class="mono sm muted" id="tok"></p>
       <p><button class="btn p" id="close">Darsni yopish</button></p></div>
@@ -65,7 +67,7 @@ if (U) {
     $('#back').onclick = () => { openId = null; draw(); };
     $('#close').onclick = () => {
       const d = DB.get(), l = by(d.lessons, openId);
-      d.users.filter(u => u.role == 'student' && u.group_id == l.group_id).forEach(u => {
+      d.users.filter(u => u.role == 'student' && lessonGroups(l).includes(u.group_id)).forEach(u => {
         if (!d.attendance.some(a => a.lesson_id == l.id && a.user_id == u.id)) d.attendance.push({ lesson_id: l.id, user_id: u.id, status: 'absent', method: '-', flagged: false, at: Date.now() });
       });
       l.open = false; l.closed = true; audit(d, 'Dars yopildi: ' + by(d.subjects, l.subject_id).name);
@@ -84,13 +86,13 @@ if (U) {
   }
   let rosterSig = '';
   function drawRoster(d, l) {
-    const st = d.users.filter(u => u.role == 'student' && u.group_id == l.group_id);
+    const st = d.users.filter(u => u.role == 'student' && lessonGroups(l).includes(u.group_id));
     const a = id => d.attendance.find(x => x.lesson_id == l.id && x.user_id == id);
     const sig = JSON.stringify(d.attendance.filter(x => x.lesson_id == l.id));
     if (sig == rosterSig && $('#roster').innerHTML) return; rosterSig = sig;
     $('#cnt').textContent = st.filter(u => a(u.id)?.status == 'present').length + ' / ' + st.length;
-    $('#roster').innerHTML = table(['Talaba', 'Holat', 'Usul', 'Masofa', ''], st.map(u => { const x = a(u.id);
-      return [esc(u.name), x ? statusTag(x.status) + (x.flagged ? ' <span class="tag warn">⚠ umumiy qurilma</span>' : '') : '<span class="tag n">Kutilmoqda</span>',
+    $('#roster').innerHTML = table(['Talaba', 'Guruh', 'Holat', 'Usul', 'Masofa', ''], st.map(u => { const x = a(u.id);
+      return [esc(u.name), esc(by(DB.get().groups, u.group_id)?.code), x ? statusTag(x.status) + (x.flagged ? ' <span class="tag warn">⚠ umumiy qurilma</span>' : '') : '<span class="tag n">Kutilmoqda</span>',
         x ? esc(x.method) : '', x?.distance ? Math.round(x.distance) + ' m' : '',
         x?.status == 'present' ? `<button class="btn sm d" data-c="${u.id}">Bekor qilish</button>` : `<button class="btn sm" data-m="${u.id}">Qo'lda belgilash</button>`]; }));
     $$('[data-c]').forEach(b => b.onclick = () => set(l, +b.dataset.c, 'cancelled'));

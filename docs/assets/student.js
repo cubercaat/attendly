@@ -30,7 +30,7 @@ if (U) {
       const d = DB.get(), r = verifyToken(tok, d);
       if (r.err) { log(d, 'QR rad etildi — ' + r.err, false); DB.save(d); return msg('❌ ' + r.err); }
       const l = r.lesson;
-      if (l.group_id != U.group_id) { log(d, 'boshqa guruh darsi', false); DB.save(d); return msg('❌ Bu dars sizning guruhingiz emas'); }
+      if (!lessonGroups(l).includes(U.group_id)) { log(d, 'boshqa guruh darsi', false); DB.save(d); return msg('❌ Bu dars sizning guruhingiz emas'); }
       if (!l.open) return msg('❌ Bu dars davomati yopilgan');
       const ex = d.attendance.find(a => a.lesson_id == l.id && a.user_id == U.id);
       if (ex?.status == 'present') return msg('✅ Davomatingiz allaqachon belgilangan');
