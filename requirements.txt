@@ -1,0 +1,21 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+greenlet==3.1.1
+alembic==1.14.0
+pydantic==2.10.4
+pydantic-settings==2.7.0
+jinja2==3.1.5
+python-multipart==0.0.20
+itsdangerous==2.2.0
+webauthn==2.5.1
+aiogram==3.15.0
+httpx==0.28.1
+numpy==2.2.1
+Pillow==11.1.0
+segno==1.6.1
+
+# --- Yuz tanish (ixtiyoriy, zaxira yo'l) ---
+# O'rnatmasangiz ham tizim ishlaydi — faqat passkey qoladi.
+# pip install insightface==0.7.3 onnxruntime==1.20.1 opencv-python-headless==4.10.0.84

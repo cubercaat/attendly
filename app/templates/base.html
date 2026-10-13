@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2a78d6">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% if demo_mode %}
+<div class="demo-bar">
+  TEST REJIMI — demo ma'lumot, haqiqiy davomat emas
+  <a href="/demo">demo kirish</a>
+</div>
+{% endif %}
+{% block topbar %}
+<header class="topbar">
+  <a class="brand" href="/"><span class="dot"></span>{{ app_name }}</a>
+  <nav>
+    {% if user %}
+      {% if user.role == 'student' %}
+        <a href="/scan">Skanerlash</a>
+        <a href="/me">Davomatim</a>
+      {% else %}
+        <a href="/dashboard">Panel</a>
+      {% endif %}
+      <a href="#" onclick="document.getElementById('lo').submit();return false">Chiqish</a>
+      <form id="lo" method="post" action="/logout" style="display:none"></form>
+    {% endif %}
+  </nav>
+</header>
+{% endblock %}
+
+<main>{% block body %}{% endblock %}</main>
+
+<script src="/static/js/common.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

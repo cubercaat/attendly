@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Test rejimi — {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="card">
+    <h1>Test rejimi</h1>
+    <p class="lead">Telegramsiz istalgan demo hisob bilan kiring. GPS va biometrika
+       tekshiruvlari <b>o'z holicha ishlaydi</b> — ya'ni haqiqiy sharoitni sinaysiz.</p>
+    <div class="list" style="margin-top:14px">
+      <div class="row"><span>GPS geofence</span>
+        <span class="pill {{ 'bad' if skip_geo else 'ok' }}">
+          {{ "O‘CHIRILGAN" if skip_geo else "tekshiriladi" }}</span></div>
+      <div class="row"><span>Passkey / yuz</span>
+        <span class="pill {{ 'bad' if skip_bio else 'ok' }}">
+          {{ "O‘CHIRILGAN" if skip_bio else "tekshiriladi" }}</span></div>
+      <div class="row"><span>Yuz tanish dvigateli</span>
+        <span class="pill {{ '' if face_on else 'warn' }}">{{ "yoqilgan" if face_on else "o‘rnatilmagan — faqat passkey" }}</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>1. Xonani hozirgi joyingizga qo'ying</h2>
+    <p class="small">GPS tekshiruvi yoqiq. Sinab ko'rish uchun demo auditoriyani
+       o'zingiz turgan nuqtaga ko'chiring — shunda geofence haqiqiy ishlaydi,
+       lekin siz o'tasiz.</p>
+    <button class="btn secondary" id="here-btn">📍 Xonani shu yerga qo'yish</button>
+    <div class="note hidden" id="here-note"></div>
+    <div class="list" style="margin-top:12px">
+      {% for r in rooms %}
+      <div class="row"><span class="name">{{ r.name }}</span>
+        <span class="meta mono">{{ "%.5f"|format(r.lat) }}, {{ "%.5f"|format(r.lng) }}
+          · {{ r.radius_m }} m</span></div>
+      {% endfor %}
+    </div>
+    <p class="small" style="margin-top:10px">Avval quyidan demo hisob bilan kiring,
+       keyin shu tugma ishlaydi.</p>
+  </div>
+
+  <div class="card">
+    <h2>2. Kirish</h2>
+    {% for u in users %}
+    <form method="post" action="/api/demo/login/{{ u.id }}" style="margin-bottom:8px">
+      <button class="btn secondary" style="justify-content:space-between">
+        <span>{{ u.name }}</span>
+        <span class="role-tag">
+          {{ u.role_uz }}{% if u.group %} · {{ u.group }}{% endif %}</span>
+      </button>
+    </form>
+    {% else %}
+    <p class="small">Demo hisob yo'q. Ishga tushiring:
+       <code>python seed_demo.py</code></p>
+    {% endfor %}
+  </div>
+
+  <div class="card flat">
+    <h2>Qanday sinaymiz</h2>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><div>
+        <h3>O'qituvchi bilan kiring</h3>
+        <p>Panel → bugungi dars → «Davomatni ochish» → QR ekrani chiqadi.</p></div></div>
+      <div class="step"><span class="n">2</span><div>
+        <h3>Telefonda talaba bilan kiring</h3>
+        <p>Bu sahifani telefonda oching, talaba tanlang → /enroll da Face ID
+           biriktiring.</p></div></div>
+      <div class="step"><span class="n">3</span><div>
+        <h3>QR ni skanerlang</h3>
+        <p>Kompyuter ekranidagi QR ni telefon bilan oling. Ismingiz o'qituvchi
+           ekranida chiqadi.</p></div></div>
+    </div>
+    {% if lessons %}
+    <p class="small">Darslar:
+      {% for l in lessons %}
+      <a href="/teacher/lesson/{{ l.id }}/qr">#{{ l.id }} {{ l.group }}
+        {{ l.pair_no }}-para{% if l.is_open %} (ochiq){% endif %}</a>{% if not loop.last %} · {% endif %}
+      {% endfor %}
+    </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$('#here-btn').addEventListener('click', async () => {
+  const btn = $('#here-btn'), box = $('#here-note');
+  btn.disabled = true;
+  note(box, 'Joylashuv aniqlanmoqda…');
+  try {
+    const p = await getPosition();
+    const r = await api('/api/demo/room-here',
+      { lat: p.lat, lng: p.lng, radius_m: Math.max(150, Math.round(p.accuracy * 2)) });
+    note(box, `✓ ${r.rooms} ta xona shu yerga ko‘chirildi — radius ${r.radius_m} m. `
+      + `Sahifani yangilang.`, 'ok');
+  } catch (e) {
+    note(box, e.message, 'bad');
+  } finally { btn.disabled = false; }
+});
+</script>
+{% endblock %}

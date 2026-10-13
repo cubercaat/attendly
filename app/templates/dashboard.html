@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Panel — {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap wrap-wide">
+  <div class="card">
+    <h1>Panel</h1>
+    <p class="small">{{ user.full_name }} · {{ user.role }}</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Bugungi darslar</h2>
+      <div class="list" id="lessons"><div class="row"><span class="small">Yuklanmoqda…</span></div></div>
+      <div class="note hidden" id="l-note"></div>
+    </div>
+
+    <div class="card">
+      <h2>Guruhlar</h2>
+      <div class="list" id="groups"></div>
+      <p class="small" style="margin-top:12px">Taklif havolasini starosta talabalarga
+         tarqatadi — talaba shu havola orqali ro'yxatdan o'tadi.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/dashboard.js"></script>{% endblock %}

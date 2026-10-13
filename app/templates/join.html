@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Guruhga qo'shilish — {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+  {% if not group %}
+    <div class="card">
+      <h1>Havola yaroqsiz</h1>
+      <p>Bu taklif havolasi eskirgan yoki o'chirilgan. Starostangizdan yangisini so'rang.</p>
+    </div>
+  {% else %}
+    <div class="card">
+      <span class="pill">Guruh</span>
+      <h1 style="margin-top:10px">{{ group.code }}</h1>
+      <p class="lead">Davomat tizimiga qo'shilish uchun Telegram orqali ro'yxatdan o'ting.
+         Bot ism-familiyangizni va telefon raqamingizni so'raydi.</p>
+      <a class="btn" href="https://t.me/{{ bot_username }}?start=g_{{ invite }}">
+        Telegram orqali ro'yxatdan o'tish
+      </a>
+      <p class="small" style="margin-top:14px">
+        Telefon raqam Telegram akkauntingizdan olinadi — qo'lda yozilmaydi.
+      </p>
+    </div>
+
+    <div class="card flat">
+      <h2>Keyin nima bo'ladi</h2>
+      <div class="steps">
+        <div class="step"><span class="n">1</span><div>
+          <h3>Botda ro'yxat</h3><p>Ism-familiya va telefon raqam.</p></div></div>
+        <div class="step"><span class="n">2</span><div>
+          <h3>Saytga qaytish</h3><p>Bot sizga bir martalik havola beradi.</p></div></div>
+        <div class="step"><span class="n">3</span><div>
+          <h3>Shaxsni biriktirish</h3>
+          <p>Telefoningizning Face ID / Touch ID si va zaxira uchun yuz skaneri.</p></div></div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

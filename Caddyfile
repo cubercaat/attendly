@@ -1,0 +1,12 @@
+# Domeningizni yozing — Caddy HTTPS sertifikatni o'zi oladi.
+attendly.uz {
+	encode gzip
+
+	# SSE uchun buferlash o'chirilgan bo'lishi kerak
+	@sse path /api/teacher/lessons/*/stream
+	reverse_proxy @sse web:8000 {
+		flush_interval -1
+	}
+
+	reverse_proxy web:8000
+}

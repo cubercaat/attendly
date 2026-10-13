@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Shaxsni biriktirish — {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="card">
+    <h1>Shaxsingizni biriktiring</h1>
+    <p class="lead">Bu bir martalik amal. Shundan keyin davomat bir necha soniyada
+       belgilanadi.</p>
+    <p class="small"><b>{{ user.full_name }}</b></p>
+  </div>
+
+  <!-- 1. PASSKEY -->
+  <div class="card" id="card-pk">
+    <div class="card-head">
+      <h2>1. Telefon biometrikasi</h2>
+      <span class="pill" id="pk-pill">kerak</span>
+    </div>
+    <p class="small">Telefoningizning o'z Face ID / Touch ID si. Hech qanday rasm yuborilmaydi —
+       qurilma faqat “bu o'sha odam” deb imzolaydi. Eng tez va eng xavfsiz yo'l.</p>
+    <button class="btn" id="pk-btn">Passkey yaratish</button>
+    <div class="note hidden" id="pk-note"></div>
+  </div>
+
+  <!-- 2. YUZ -->
+  <div class="card" id="card-face">
+    <div class="card-head">
+      <h2>2. Yuz zaxirasi</h2>
+      <span class="pill" id="face-pill">ixtiyoriy</span>
+    </div>
+    <p class="small">Telefoningiz yoningizda bo'lmasa — do'stingizning telefonidan
+       o'z yuzingiz bilan kirasiz. Rasm saqlanmaydi, faqat raqamli “iz”.</p>
+
+    <div class="camera hidden" id="face-cam">
+      <video id="face-video" playsinline muted></video>
+      <div class="frame"></div>
+      <div class="hint" id="face-hint">Tayyorlanmoqda…</div>
+    </div>
+
+    <button class="btn secondary" id="face-btn" style="margin-top:12px">Yuzni biriktirish</button>
+    <div class="note hidden" id="face-note"></div>
+  </div>
+
+  <a class="btn ghost" href="/scan" id="done-btn">Tayyor — skanerlashga o'tish</a>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/enroll.js"></script>{% endblock %}

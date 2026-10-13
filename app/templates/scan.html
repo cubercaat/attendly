@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Skanerlash — {{ app_name }}{% endblock %}
+{% block head %}
+<!-- Ixtiyoriy: eski brauzerlar uchun zaxira skaner. Yuklanmasa ham sahifa ishlaydi. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js" defer onerror="window.JSQR_FAILED=1"></script>
+{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="card">
+    <h1>Davomat</h1>
+    <p class="lead">O'qituvchi ekranidagi QR kodni kameraga tuting.</p>
+  </div>
+
+  <div class="card" id="stage">
+    <div class="camera hidden" id="cam">
+      <video id="video" playsinline muted></video>
+      <div class="frame"></div>
+      <div class="hint" id="hint">QR kodni ramka ichiga joylang</div>
+    </div>
+
+    <button class="btn" id="start">Skanerni ochish</button>
+    <div class="note hidden" id="msg"></div>
+  </div>
+
+  <!-- Yuz tekshiruvi (passkey bo'lmasa) -->
+  <div class="card hidden" id="face-stage">
+    <h2>Yuz bilan tasdiqlash</h2>
+    <div class="camera" id="fcam">
+      <video id="fvideo" playsinline muted></video>
+      <div class="frame"></div>
+      <div class="hint" id="fhint">Tayyorlanmoqda…</div>
+    </div>
+  </div>
+
+  <p class="small">Joylashuvga va kameraga ruxsat berishingiz kerak — busiz davomat
+     belgilanmaydi.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.PREFILL = {{ prefill | tojson }};</script>
+<script src="/static/js/scan.js"></script>
+{% endblock %}

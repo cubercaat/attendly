@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Mening davomatim — {{ app_name }}{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="card">
+    <h1>Mening davomatim</h1>
+    <div class="stat" style="margin-top:12px">
+      <span class="big mono" id="pct">—</span>
+      <span class="small" id="sub"></span>
+    </div>
+  </div>
+  <div class="card">
+    <h2>So'nggi darslar</h2>
+    <div class="list" id="items"></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const LABEL = { present: 'Keldi', excused: 'Sababli', absent: 'Kelmadi',
+                rejected: 'Bekor qilingan', late: 'Kechikdi' };
+const CLS = { present: 'ok', excused: 'warn', absent: 'bad', rejected: 'bad' };
+api('/api/attend/my').then(d => {
+  $('#pct').textContent = d.percent + '%';
+  $('#sub').textContent = `${d.present} / ${d.total} para`;
+  $('#items').innerHTML = d.items.map(i => {
+    const date = new Date(i.date).toLocaleDateString('uz-UZ',
+      { day: '2-digit', month: 'short' });
+    return `<div class="row">
+      <div><div class="name">${i.subject}</div>
+      <div class="meta">${date}${i.pair_no ? ' · ' + i.pair_no + '-para' : ''}</div></div>
+      <span class="pill ${CLS[i.status] || ''}">${LABEL[i.status] || i.status}</span>
+    </div>`;
+  }).join('') || '<div class="row"><span class="small">Hali yozuv yo‘q</span></div>';
+});
+</script>
+{% endblock %}

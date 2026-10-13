@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="wrap">
+  <div class="card">
+    <h1>{{ app_name }}</h1>
+    <p class="lead">TTPU davomat tizimi. O'qituvchi ekrandagi QR kodni ko'rsatadi,
+       siz uni skanerlaysiz — joylashuv va shaxsingiz tasdiqlanadi.</p>
+  </div>
+
+  <div class="card">
+    <h2>Kirish</h2>
+    <p class="small">Tizimga kirish uchun starostangiz bergan <b>guruh havolasi</b> kerak.
+       Havola orqali Telegram boti ochiladi va ro'yxatdan o'tasiz.</p>
+    <a class="btn secondary" href="https://t.me/{{ bot_username }}">Telegram botni ochish</a>
+  </div>
+
+  <div class="card flat">
+    <h2>Nega aldab bo'lmaydi</h2>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><div>
+        <h3>QR har 3 soniyada yangilanadi</h3>
+        <p>Do'stingizga skrinshot yuborsangiz — u yetib borguncha kod o'ladi.</p></div></div>
+      <div class="step"><span class="n">2</span><div>
+        <h3>Joylashuv tekshiriladi</h3>
+        <p>Auditoriyadan uzoqda bo'lsangiz qabul qilinmaydi.</p></div></div>
+      <div class="step"><span class="n">3</span><div>
+        <h3>Shaxs tasdiqlanadi</h3>
+        <p>Telefoningizning Face ID si, yoki boshqa qurilmadan — yuz tanish.</p></div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

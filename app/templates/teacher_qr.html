@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}QR — {{ app_name }}{% endblock %}
+{% block topbar %}{% endblock %}
+{% block body %}
+<div class="qr-stage">
+  <div class="qr-box">
+    <div class="pill" id="meta-lesson">Yuklanmoqda…</div>
+    <div class="qr-canvas" id="qr"></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="qr-meta" style="margin-top:14px">
+      <span>Kod har <b id="meta-rot">3</b> soniyada yangilanadi</span>
+      <span id="meta-closes"></span>
+    </div>
+
+    <div class="card" style="margin-top:26px; text-align:left">
+      <div class="card-head">
+        <h2 style="margin:0">Kelganlar</h2>
+        <span class="stat"><span class="big mono" id="cnt">0</span>
+          <span class="small">/ <span id="tot">0</span></span></span>
+      </div>
+      <div class="list" id="roster"></div>
+      <div style="display:flex; gap:10px; margin-top:14px">
+        <button class="btn secondary sm" onclick="location.href='/dashboard'">Panel</button>
+        <button class="btn danger sm" id="close-btn">Davomatni yopish</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.LESSON_ID = {{ lesson_id }};</script>
+<script src="/static/js/teacher_qr.js"></script>
+{% endblock %}

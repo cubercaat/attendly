@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Kutubxonalarni o'rnatish
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest aiosqlite
+
+      - name: Anti-cheat testlari
+        env:
+          SECRET_KEY: ci-test-secret
+          BASE_URL: http://localhost:8000
+          DATABASE_URL: sqlite+aiosqlite:///./ci.db
+        run: pytest tests/ -q
+
+      - name: Ilova yuklanishini tekshirish
+        env:
+          SECRET_KEY: ci-test-secret
+          BASE_URL: http://localhost:8000
+          DATABASE_URL: sqlite+aiosqlite:///./ci.db
+          DEMO_MODE: "true"
+        run: |
+          python -c "from app.main import app; print('routes:', len(app.routes))"
+          python seed_demo.py

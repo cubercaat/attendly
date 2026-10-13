@@ -1,0 +1,222 @@
+/* Attendly — sodda va toza. Animatsiya minimal. */
+
+:root {
+  color-scheme: light;
+  --surface:      #ffffff;
+  --plane:        #f7f7f5;
+  --ink:          #0b0b0b;
+  --ink-2:        #52514e;
+  --muted:        #898781;
+  --line:         #e4e3dd;
+  --accent:       #2a78d6;
+  --accent-ink:   #ffffff;
+  --accent-soft:  #eaf2fd;
+  --ok:           #0ca30c;
+  --warn:         #eda100;
+  --bad:          #d03b3b;
+  --radius:       14px;
+  --radius-sm:    10px;
+  --shadow:       0 1px 2px rgba(11,11,11,.05), 0 8px 24px rgba(11,11,11,.06);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface:     #1a1a19;
+    --plane:       #0d0d0d;
+    --ink:         #ffffff;
+    --ink-2:       #c3c2b7;
+    --muted:       #898781;
+    --line:        #2c2c2a;
+    --accent:      #3987e5;
+    --accent-soft: #15243a;
+    --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--plane);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.55;
+}
+
+.wrap { max-width: 540px; margin: 0 auto; padding: 24px 16px 56px; }
+.wrap-wide { max-width: 980px; }
+
+/* ---------------------------------------------------------- tipografiya */
+h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; margin: 0 0 6px; }
+h2 { font-size: 1.1rem; font-weight: 650; margin: 0 0 10px; }
+p  { margin: 0 0 12px; color: var(--ink-2); }
+.lead { font-size: 1rem; color: var(--ink-2); }
+.small { font-size: .85rem; color: var(--muted); }
+.mono { font-variant-numeric: tabular-nums; }
+a { color: var(--accent); text-decoration: none; }
+
+/* ----------------------------------------------------- test rejimi tasmasi */
+.demo-bar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  flex-wrap: wrap;
+  padding: 7px 14px;
+  background: #eda100; color: #1a1a19;
+  font-size: .82rem; font-weight: 650; letter-spacing: .01em;
+  text-align: center;
+}
+.demo-bar a { color: #1a1a19; text-decoration: underline; }
+
+/* --------------------------------------------------------------- shapka */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 700; letter-spacing: -.02em; }
+.brand .dot {
+  width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+}
+.topbar nav { display: flex; gap: 16px; font-size: .9rem; }
+.topbar nav a { color: var(--ink-2); }
+.topbar nav a:hover { color: var(--ink); }
+
+/* ---------------------------------------------------------------- karta */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.card.flat { box-shadow: none; }
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+
+/* --------------------------------------------------------------- tugma */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 14px 18px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: var(--accent); color: var(--accent-ink);
+  font: inherit; font-weight: 600; font-size: .98rem;
+  cursor: pointer; transition: opacity .15s ease;
+}
+.btn:hover { opacity: .9; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.secondary {
+  background: var(--surface); color: var(--ink); border-color: var(--line);
+}
+.btn.ghost { background: transparent; color: var(--ink-2); border-color: var(--line); }
+.btn.danger { background: var(--bad); }
+.btn.sm { width: auto; padding: 8px 14px; font-size: .85rem; }
+.role-tag { font-size: .78rem; font-weight: 500; color: var(--muted); }
+
+/* --------------------------------------------------------------- qadam */
+.steps { display: grid; gap: 10px; margin: 18px 0; }
+.step {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.step .n {
+  flex: 0 0 26px; height: 26px; border-radius: 50%;
+  background: var(--plane); color: var(--ink-2);
+  display: grid; place-items: center; font-size: .82rem; font-weight: 650;
+}
+.step.done { border-color: var(--ok); }
+.step.done .n { background: var(--ok); color: #fff; }
+.step.active { border-color: var(--accent); }
+.step.active .n { background: var(--accent); color: #fff; }
+.step h3 { margin: 0 0 2px; font-size: .95rem; font-weight: 620; }
+.step p { margin: 0; font-size: .86rem; }
+
+/* ------------------------------------------------------------- holatlar */
+.note {
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  font-size: .9rem; margin: 12px 0; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink-2);
+}
+.note.ok   { border-color: var(--ok);   color: var(--ok); background: transparent; }
+.note.bad  { border-color: var(--bad);  color: var(--bad); background: transparent; }
+.note.warn { border-color: var(--warn); color: var(--ink-2); }
+.hidden { display: none !important; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: .78rem; font-weight: 600;
+  background: var(--plane); color: var(--ink-2); border: 1px solid var(--line);
+}
+.pill.ok   { color: var(--ok);   border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.pill.bad  { color: var(--bad);  border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
+.pill.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
+
+/* --------------------------------------------------------------- kamera */
+.camera {
+  position: relative; width: 100%; aspect-ratio: 1/1;
+  background: #000; border-radius: var(--radius); overflow: hidden;
+}
+.camera video { width: 100%; height: 100%; object-fit: cover; }
+.camera .frame {
+  position: absolute; inset: 14%; border: 2px solid rgba(255,255,255,.85);
+  border-radius: 18px; pointer-events: none;
+}
+.camera .hint {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 12px 14px; color: #fff; font-size: .9rem; font-weight: 600;
+  background: linear-gradient(transparent, rgba(0,0,0,.65));
+}
+
+/* ------------------------------------------------------------------ QR */
+.qr-stage {
+  min-height: 100vh; display: grid; place-items: center;
+  background: var(--surface); padding: 24px;
+}
+.qr-box { text-align: center; max-width: 620px; width: 100%; }
+.qr-canvas {
+  width: min(62vmin, 460px); height: min(62vmin, 460px);
+  margin: 18px auto; display: block;
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 14px;
+  background: #fff;
+}
+.qr-canvas svg { width: 100%; height: 100%; display: block; shape-rendering: crispEdges; }
+.qr-meta { display: flex; justify-content: center; gap: 22px; color: var(--muted); font-size: .9rem; }
+.bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 12px; }
+.bar > i { display: block; height: 100%; background: var(--accent); width: 100%; }
+
+/* --------------------------------------------------------------- jadval */
+.list { display: grid; gap: 1px; background: var(--line); border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--line); }
+.row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 14px; background: var(--surface); font-size: .92rem;
+}
+.row .name { font-weight: 550; }
+.row .meta { color: var(--muted); font-size: .8rem; }
+
+.stat { display: flex; align-items: baseline; gap: 10px; }
+.stat .big { font-size: 2.6rem; font-weight: 700; letter-spacing: -.03em; color: var(--accent); }
+
+.grid2 { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+
+input[type=text], input[type=number], select {
+  width: 100%; padding: 12px 14px; font: inherit;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--ink);
+}
+
+.spinner {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
