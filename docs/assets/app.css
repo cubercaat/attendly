@@ -48,3 +48,6 @@ label{display:block;font-size:13px;color:var(--ink-2);margin-bottom:10px}label i
 .roles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:20px}.roles .card{margin:0;display:flex;flex-direction:column}.roles .card .btn{margin-top:auto;align-self:flex-start}
 .ico{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;margin-bottom:10px}
 @media(max-width:560px){.wrap{padding:14px 12px}.top{padding:10px 12px}}
+
+.slot{min-width:120px;padding:6px 8px;border-radius:8px;background:var(--accent-soft);line-height:1.35}
+.slot b{font-size:13px}

@@ -1,8 +1,8 @@
 const U = guard(['teacher', 'starosta', 'super_admin']);
 if (U) {
   let tab = 'today', openId = null, timer = null;
-  const TABS = [['today', 'Bugungi darslar'], ['new', 'Yangi dars'], ['history', 'Tarix']];
-  const mine = (d, l) => U.role == 'starosta' ? l.group_id == U.group_id : (U.role == 'super_admin' || l.teacher_id == U.id);
+  const TABS = [['today', 'Bugungi darslar'], ['week', 'Hafta jadvali'], ['new', 'Yangi dars'], ['history', 'Tarix']];
+  const mine = (d, l) => U.role == 'starosta' ? l.group_id == U.group_id : (U.role == 'super_admin' || U.all || l.teacher_id == U.id);
 
   function draw() {
     clearInterval(timer);
@@ -10,21 +10,26 @@ if (U) {
     $$('.tab').forEach(b => b.onclick = () => { tab = b.dataset.t; draw(); });
     const d = DB.get(), el = $('#view');
     if (openId) return qrView(d, el);
-    ({ today, new: newLesson, history })[tab](d, el);
+    ({ today, week, new: newLesson, history })[tab](d, el);
   }
-  const lessonRow = (d, l) => [`<b>${l.pair}-juftlik</b>`, esc(by(d.subjects, l.subject_id)?.name), esc(by(d.groups, l.group_id)?.code),
+  const lessonRow = (d, l) => [`<b>${l.pair}</b> <span class="muted sm">${SLOTS[l.pair] || ''}</span>`, esc(lessonName(d, l)), esc(by(d.groups, l.group_id)?.code),
     esc(by(d.rooms, l.room_id)?.name || '—')];
 
   function today(d, el) {
-    const ls = d.lessons.filter(l => !l.closed && mine(d, l));
+    const ls = d.lessons.filter(l => !l.closed && isToday(l) && mine(d, l)).sort((a, b) => a.pair - b.pair);
     el.innerHTML = `<div class="card"><h2>Bugungi darslar</h2>${table(['Juftlik', 'Fan', 'Guruh', 'Xona', ''],
       ls.map(l => [...lessonRow(d, l), `<button class="btn p sm" data-o="${l.id}">${l.open ? 'QR ekrani' : 'Davomatni ochish'}</button>`]),
-      "Ochiq dars yo'q — «Yangi dars» bo'limidan yarating")}</div>`;
+      "Bugun darsingiz yo'q (yakshanba yoki dars tugagan). «Yangi dars» bo'limidan demo dars yarating.")}</div>`;
     $$('[data-o]', el).forEach(b => b.onclick = () => {
       const d = DB.get(), l = by(d.lessons, b.dataset.o);
       if (!l.open) { l.open = true; audit(d, `Dars ochildi: ${by(d.subjects, l.subject_id).name} (${by(d.groups, l.group_id).code})`); DB.save(d); }
       openId = l.id; draw();
     });
+  }
+  function week(d, el) {
+    const gs = U.role == 'starosta' ? d.groups.filter(g => g.id == U.group_id) : d.groups;
+    el.innerHTML = `<div class="card"><label style="max-width:240px">Guruh<select id="wg">${gs.map(g => `<option value="${g.id}" ${g.code == 'CYB3-26' ? 'selected' : ''}>${esc(g.code)}</option>`).join('')}</select></label><div id="tt"></div></div>`;
+    const show = () => $('#tt').innerHTML = ttGrid(d, $('#wg').value); $('#wg').onchange = show; show();
   }
   function newLesson(d, el) {
     const opt = (a, f) => a.map(x => `<option value="${x.id}">${esc(f(x))}</option>`).join('');
@@ -51,8 +56,8 @@ if (U) {
   function qrView(d, el) {
     const l = by(d.lessons, openId), room = by(d.rooms, l.room_id);
     el.innerHTML = `<button class="btn sm" id="back">← Darslar</button>
-    <div class="card" style="text-align:center;margin-top:12px"><h2>${esc(by(d.subjects, l.subject_id)?.name)} · ${esc(by(d.groups, l.group_id)?.code)}</h2>
-      <p class="muted sm">${esc(room?.name || '')} · QR har ${STEP} soniyada yangilanadi</p>
+    <div class="card" style="text-align:center;margin-top:12px"><h2>${esc(lessonName(d, l))} · ${esc(by(d.groups, l.group_id)?.code)}</h2>
+      <p class="muted sm">${esc(room?.name || '')} · ${SLOTS[l.pair] || ''} · QR har ${STEP} soniyada yangilanadi</p>
       <div class="qrbox" id="qr"></div><div class="bar" style="max-width:300px;margin:12px auto"><i id="cd"></i></div>
       <p class="mono sm muted" id="tok"></p>
       <p><button class="btn p" id="close">Darsni yopish</button></p></div>

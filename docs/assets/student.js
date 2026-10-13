@@ -1,13 +1,13 @@
 const U = guard(['student']);
 if (U) {
   let tab = 'scan', ctx = null, lastTok = sessionStorage.getItem('stu_last') || '';
-  const TABS = [['scan', 'Skanerlash'], ['history', 'Davomatim'], ['me', 'Profil']];
+  const TABS = [['scan', 'Skanerlash'], ['week', 'Jadval'], ['history', 'Davomatim'], ['me', 'Profil']];
   const DIST = { in: 35, near: 90, far: 4200 };
 
   function draw() {
     shell(U, 'Talaba paneli', TABS, tab);
     $$('.tab').forEach(b => b.onclick = () => { tab = b.dataset.t; ctx = null; draw(); });
-    ({ scan, history, me: profile })[tab](DB.get(), $('#view'));
+    ({ scan, week, history, me: profile })[tab](DB.get(), $('#view'));
   }
   const log = (d, text, ok) => audit(d, `${U.name}: ${text}`, ok);
 
@@ -40,7 +40,7 @@ if (U) {
 
   function verify(d, el) {
     const l = by(d.lessons, ctx.lid), room = by(d.rooms, l.room_id);
-    el.innerHTML = `<div class="card"><h2>${esc(by(d.subjects, l.subject_id)?.name)}</h2>
+    el.innerHTML = `<div class="card"><h2>${esc(lessonName(d, l))}</h2>
       <p class="sm muted">${esc(room?.name)} · ${l.pair}-juftlik · QR yoshi ${ctx.age}s ✅</p>
       <ol class="steps"><li>✅ <span>QR kod to'g'ri va yangi</span></li>
       <li>📍 <span>Joylashuv (GPS) — demo uchun tanlang:<br>
@@ -69,12 +69,13 @@ if (U) {
     };
   }
 
+  function week(d, el) { el.innerHTML = `<div class="card"><h2>${esc(by(d.groups, U.group_id)?.code)} — bu hafta</h2>${ttGrid(d, U.group_id)}</div>`; }
   function history(d, el) {
     const rows = d.attendance.filter(a => a.user_id == U.id).map(a => ({ a, l: by(d.lessons, a.lesson_id) })).filter(x => x.l).sort((p, q) => q.l.starts - p.l.starts);
     const p = rows.filter(x => x.a.status == 'present').length, pc = rows.length ? Math.round(p / rows.length * 100) : 0;
     el.innerHTML = `<div class="card"><h2>Davomat: ${pc}%</h2><div class="bar"><i style="width:${pc}%"></i></div><p class="sm muted">${p} / ${rows.length} dars</p></div>
       <div class="card">${table(['Sana', 'Fan', 'Juftlik', 'Holat', 'Usul'], rows.slice(0, 40).map(({ a, l }) =>
-        [fmtD(l.starts), esc(by(d.subjects, l.subject_id)?.name), l.pair, statusTag(a.status), esc(a.method || '')]), 'Hali yozuv yo\'q')}</div>`;
+        [fmtD(l.starts), esc(lessonName(d, l)), l.pair, statusTag(a.status), esc(a.method || '')]), 'Hali yozuv yo\'q')}</div>`;
   }
   function profile(d, el) {
     el.innerHTML = `<div class="card"><h2>${esc(U.name)}</h2><p class="sm">Guruh: <b>${esc(by(d.groups, U.group_id)?.code)}</b></p>

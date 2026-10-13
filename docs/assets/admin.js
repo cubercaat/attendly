@@ -1,7 +1,7 @@
 const U = guard(['super_admin']);
 if (U) {
   let tab = sessionStorage.getItem('adm_tab') || 'home';
-  const TABS = [['home', 'Umumiy'], ['groups', 'Guruhlar'], ['rooms', 'Xonalar'], ['subjects', 'Fanlar'],
+  const TABS = [['home', 'Umumiy'], ['groups', 'Guruhlar'], ['tt', 'Jadval'], ['rooms', 'Xonalar'], ['subjects', 'Fanlar'],
     ['users', 'Foydalanuvchilar'], ['invites', 'Takliflar'], ['report', 'Hisobot'], ['audit', 'Audit log']];
 
   function draw() {
@@ -56,6 +56,10 @@ if (U) {
         d.groups.map(g => [`<b>${esc(g.code)}</b>`, g.year, d.users.filter(u => u.group_id == g.id && u.role == 'student').length,
           `<span class="cred">/join/${g.invite}</span>`, delBtn(g.id)]))}</div>`);
       bindDel(el, (d, id) => d.groups = d.groups.filter(g => g.id != id));
+    },
+    tt(d, el) {
+      el.innerHTML = `<div class="card"><label style="max-width:240px">Guruh<select id="wg">${d.groups.map(g => `<option value="${g.id}" ${g.code == 'CYB3-26' ? 'selected' : ''}>${esc(g.code)}</option>`).join('')}</select></label><div id="tt"></div></div>`;
+      const show = () => $('#tt').innerHTML = ttGrid(d, $('#wg').value); $('#wg').onchange = show; show();
     },
     rooms(d, el) {
       el.innerHTML = '';
