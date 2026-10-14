@@ -1,8 +1,8 @@
 const U = guard(['super_admin']);
 if (U) {
   let tab = sessionStorage.getItem('adm_tab') || 'home';
-  const TABS = [['home', 'Umumiy'], ['groups', 'Guruhlar'], ['tt', 'Jadval'], ['rooms', 'Xonalar'], ['subjects', 'Fanlar'],
-    ['users', 'Foydalanuvchilar'], ['invites', 'Takliflar'], ['report', 'Hisobot'], ['audit', 'Audit log']];
+  const TABS = [['home', 'Umumiy'], ['groups', 'Guruhlar'], ['lessons', 'Darslar'], ['tt', 'Jadval'], ['rooms', 'Xonalar'], ['subjects', 'Fanlar'],
+    ['users', 'Foydalanuvchilar'], ['invites', 'Takliflar'], ['notify', 'Bildirishnoma'], ['chat', 'Chat'], ['report', 'Hisobot'], ['audit', 'Audit log']];
 
   function draw() {
     shell(U, 'Admin panel', TABS, tab);
@@ -87,9 +87,12 @@ if (U) {
         d.users.push({ id: DB.id(d, 'user'), login: f.login, pass: f.pass, name: f.name, role: f.role, group_id: +f.group, enrolled: true });
         audit(d, "Foydalanuvchi qo'shildi: " + f.name);
       });
-      el.insertAdjacentHTML('beforeend', `<div class="card">${table(['Ism', 'Rol', 'Guruh', 'Login', ''],
+      el.insertAdjacentHTML('beforeend', `<div class="card">${table(['Ism', 'Rol', 'Guruh', 'Login', "Ro'yxat", ''],
         d.users.map(u => [esc(u.name), `<span class="tag n">${ROLE_UZ[u.role]}</span>`, esc(by(d.groups, u.group_id)?.code || '—'),
-          `<span class="cred">${esc(u.login)}</span>`, u.id == U.id ? '' : delBtn(u.id)]))}</div>`);
+          `<span class="cred">${esc(u.login)}</span>`,
+          u.role != 'student' ? '' : u.enrolled ? `<span class="tag ok">Ro'yxatda</span> <button class="btn sm" data-en="${u.id}">Chiqarish</button>` : `<span class="tag warn">Ro'yxatda emas</span> <button class="btn sm p" data-en="${u.id}">Ro'yxatga olish</button>`,
+          u.id == U.id ? '' : delBtn(u.id)]))}</div>`);
+      $$('[data-en]', el).forEach(b => b.onclick = () => { const d = DB.get(), u = by(d.users, b.dataset.en); u.enrolled = !u.enrolled; audit(d, `${u.name}: ${u.enrolled ? "ro'yxatga olindi" : "ro'yxatdan chiqarildi"}`); DB.save(d); draw(); });
       bindDel(el, (d, id) => d.users = d.users.filter(u => u.id != id));
     },
     invites(d, el) {
@@ -111,17 +114,19 @@ if (U) {
       });
       const sts = d.users.filter(u => u.role == 'student').map(u => {
         const a = d.attendance.filter(x => x.user_id == u.id);
-        return [esc(u.name), esc(by(d.groups, u.group_id)?.code || ''), a.length, pct(a.filter(x => x.status == 'present').length, a.length)];
-      }).sort((a, b) => a[3] - b[3]);
+        const p = a.filter(x => x.status == 'present').length;
+        return [esc(u.name), esc(by(d.groups, u.group_id)?.code || ''), a.length, p, pct(p, a.length)];
+      }).sort((a, b) => a[4] - b[4]);
       el.innerHTML = `<div class="card"><h2>Guruhlar bo'yicha</h2>${table(['Guruh', 'Talaba', 'Yozuv', 'Davomat', 'Shubhali'], rows)}</div>
-      <div class="card"><h2>Talabalar (eng past davomat birinchi)</h2>${table(['Talaba', 'Guruh', 'Dars', '%'],
-        sts.map(r => [r[0], r[1], r[2], `<div class="bar" style="width:90px;display:inline-block"><i style="width:${r[3]}%"></i></div> ${r[3]}%`]))}</div>`;
+      <div class="card"><h2>Talabalar (eng past davomat birinchi)</h2>${table(['Talaba', 'Guruh', 'Dars', 'Kelgan', '%'],
+        sts.map(r => [r[0], r[1], r[2], r[3], `<div class="bar" style="width:90px;display:inline-block"><i style="width:${r[4]}%"></i></div> ${r[4]}%`]))}</div>`;
     },
     audit(d, el) {
       el.innerHTML = `<div class="card"><h2>Audit log</h2>${table(['Vaqt', 'Hodisa', 'Natija'],
         d.audit.map(x => [fmtD(x.at) + ' ' + fmtT(x.at), esc(x.text), x.ok ? '<span class="tag ok">OK</span>' : '<span class="tag bad">Rad</span>']), "Hodisa yo'q")}</div>`;
     },
   };
+  Object.assign(V, adminExtras(U, draw));
   draw();
   window.addEventListener('storage', e => { if (e.key == KEY && ['home', 'audit', 'report'].includes(tab)) draw(); });
 }

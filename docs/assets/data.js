@@ -73,7 +73,7 @@ function seed() {
   const teacherId = l => users.find(u => u.login === l).id;
 
   const groups = ['CYB1-26', 'CYB2-26', 'CYB3-26', 'CYB4-26'].map((c, i) => ({ id: i + 1, code: c, year: 2026, invite: 'inv' + (i + 1) + 'x' }));
-  const rooms = ROOM_NAMES.map((n, i) => ({ id: i + 1, name: n, building: n == 'Prerecorded' ? 'Onlayn' : /LAB|Chem/.test(n) ? 'Laboratoriya' : /Hall|Library/.test(n) ? 'Umumiy' : 'Asosiy bino', radius: 120 }));
+  const rooms = ROOM_NAMES.map((n, i) => ({ id: i + 1, name: n, building: n == 'Prerecorded' ? 'Onlayn' : /LAB|Chem/.test(n) ? 'Laboratoriya' : /Hall|Library/.test(n) ? 'Zallar' : 'Asosiy bino', radius: 120 }));
   const roomId = n => rooms.find(x => x.name === n).id;
   const subjects = Object.keys(SUBJECT_NAMES).map((k, i) => ({ id: i + 1, key: k, name: SUBJECT_NAMES[k] }));
   const subjId = k => subjects.find(s => s.key === k).id;
@@ -86,7 +86,7 @@ function seed() {
     students[g.id] = names.map(n => { const u = { id: uid++, login: '', pass: '', name: n, role: 'student', group_id: g.id, enrolled: true, rate: [0, .06, .12, .3, .5, .65, .8, .9, .95][Math.floor(r() * 9)] }; users.push(u); return u; });
   });
   const me = students[3].find(u => u.name == 'Mamatqulov Zafar'); me.login = 'student'; me.pass = 'student123'; me.rate = .9;
-  Object.values(students).flat().forEach((u, i) => { if (!u.login) { u.login = 's' + u.id; u.pass = 'pass' + u.id; } });
+  Object.values(students).flat().forEach((u, i) => { if (u.id % 7 == 3 && u.login !== 'student') u.enrolled = false; if (!u.login) { u.login = 's' + u.id; u.pass = 'pass' + u.id; } });
 
   // darslar: joriy hafta + 2 hafta tarix. Ma'ruza = oqim (3-4 guruh bitta xonada, bitta dars)
   const today = dayStart(Date.now()), dow = (new Date().getDay() + 6) % 7;       // 0=Du

@@ -1,16 +1,16 @@
 const U = guard(['teacher', 'starosta', 'super_admin']);
 if (U) {
   let tab = 'today', openId = null, timer = null;
-  const TABS = [['today', 'Bugungi darslar'], ['week', 'Hafta jadvali'], ['new', 'Yangi dars'], ['history', 'Tarix']];
+  const TABS = [['today', 'Bugungi darslar'], ['week', 'Hafta jadvali'], ['new', 'Yangi dars'], ['history', 'Tarix'], ['inbox', 'Xabarlar'], ['chat', 'Chat']];
   const mine = (d, l) => U.role == 'starosta' ? lessonGroups(l).includes(U.group_id) : (U.role == 'super_admin' || U.all || l.teacher_id == U.id);
 
   function draw() {
     clearInterval(timer);
-    shell(U, U.role == 'starosta' ? 'Starosta paneli' : "O'qituvchi paneli", openId ? null : TABS, tab);
+    shell(U, U.role == 'starosta' ? 'Starosta paneli' : "O'qituvchi paneli", openId ? null : tabLabel(U, TABS), tab);
     $$('.tab').forEach(b => b.onclick = () => { tab = b.dataset.t; draw(); });
     const d = DB.get(), el = $('#view');
     if (openId) return qrView(d, el);
-    ({ today, week, new: newLesson, history })[tab](d, el);
+    ({ today, week, new: newLesson, history, inbox: (d, el) => renderInbox(el, U), chat: (d, el) => renderChat(el, U) })[tab](d, el);
   }
   const lessonRow = (d, l) => [`<b>${l.pair}</b> <span class="muted sm">${SLOTS[l.pair] || ''}</span>`, esc(lessonName(d, l)), esc(groupCodes(d, l)),
     esc(by(d.rooms, l.room_id)?.name || '—')];

@@ -13,4 +13,4 @@ $('#roles').innerHTML=R.map(([r,t,l,p,d],i)=>`<div class="card"><div class="ico"
 function go(l,p){const u=login(l,p);if(!u){$('#err').textContent="Login yoki parol noto'g'ri";return}location.href=HOME[u.role]+'/index.html'}
 $$('#roles .btn').forEach(b=>b.onclick=()=>go(R[b.dataset.i][2],R[b.dataset.i][3]));
 $('#f').onsubmit=e=>{e.preventDefault();go($('#l').value,$('#p').value)};
-</script></body></html>
+</script><script src="assets/i18n.js"></script></body></html>

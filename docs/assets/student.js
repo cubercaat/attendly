@@ -1,13 +1,13 @@
 const U = guard(['student']);
 if (U) {
   let tab = 'scan', ctx = null, lastTok = sessionStorage.getItem('stu_last') || '';
-  const TABS = [['scan', 'Skanerlash'], ['week', 'Jadval'], ['history', 'Davomatim'], ['me', 'Profil']];
+  const TABS = [['scan', 'Skanerlash'], ['week', 'Jadval'], ['history', 'Davomatim'], ['inbox', 'Xabarlar'], ['chat', 'Chat'], ['me', 'Profil']];
   const DIST = { in: 35, near: 90, far: 4200 };
 
   function draw() {
-    shell(U, 'Talaba paneli', TABS, tab);
+    shell(U, 'Talaba paneli', tabLabel(U, TABS), tab);
     $$('.tab').forEach(b => b.onclick = () => { tab = b.dataset.t; ctx = null; draw(); });
-    ({ scan, week, history, me: profile })[tab](DB.get(), $('#view'));
+    ({ scan, week, history, inbox: (d, el) => renderInbox(el, U), chat: (d, el) => renderChat(el, U), me: profile })[tab](DB.get(), $('#view'));
   }
   const log = (d, text, ok) => audit(d, `${U.name}: ${text}`, ok);
 
@@ -28,6 +28,7 @@ if (U) {
     $('#go').onclick = () => { lastTok = $('#code').value; sessionStorage.setItem('stu_last', lastTok); start(lastTok); };
     function start(tok) {
       const d = DB.get(), r = verifyToken(tok, d);
+      if (!by(d.users, U.id).enrolled) return msg("❌ Siz ro'yxatga olinmagansiz — «Profil» bo'limida ro'yxatdan o'ting yoki admin ro'yxatga olsin");
       if (r.err) { log(d, 'QR rad etildi — ' + r.err, false); DB.save(d); return msg('❌ ' + r.err); }
       const l = r.lesson;
       if (!lessonGroups(l).includes(U.group_id)) { log(d, 'boshqa guruh darsi', false); DB.save(d); return msg('❌ Bu dars sizning guruhingiz emas'); }
@@ -78,8 +79,9 @@ if (U) {
         [fmtD(l.starts), esc(lessonName(d, l)), l.pair, statusTag(a.status), esc(a.method || '')]), 'Hali yozuv yo\'q')}</div>`;
   }
   function profile(d, el) {
+    setTimeout(() => { const b = $('#enr'); if (b) b.onclick = () => { const d = DB.get(), u = by(d.users, U.id); u.enrolled = true; audit(d, `${U.name}: ro'yxatdan o'tdi (passkey)`); DB.save(d); toast("Ro'yxatga olindingiz ✅"); draw(); }; });
     el.innerHTML = `<div class="card"><h2>${esc(U.name)}</h2><p class="sm">Guruh: <b>${esc(by(d.groups, U.group_id)?.code)}</b></p>
-      <p class="sm">Biriktirilgan: <span class="tag ok">Passkey</span> <span class="tag ok">Yuz shabloni</span></p>
+      <p class="sm">Biriktirilgan: ${by(d.users, U.id).enrolled ? '<span class="tag ok">Passkey</span> <span class="tag ok">Yuz shabloni</span>' : `<span class="tag warn">Ro'yxatda emas</span> <button class="btn p sm" id="enr">Ro'yxatdan o'tish (passkey yaratish)</button>`}</p>
       <p class="sm muted">Qurilma ID: <span class="mono">${deviceId()}</span> — bir brauzerdan ikki talaba belgilansa, o'qituvchiga ogohlantirish boradi.</p></div>`;
   }
   draw();
