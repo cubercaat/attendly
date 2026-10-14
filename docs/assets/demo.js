@@ -74,13 +74,17 @@ const lessonGroups=l=>l.group_ids||[l.group_id];
 const groupCodes=(d,l)=>lessonGroups(l).map(g=>by(d.groups,g)?.code).join(', ');
 const lessonName=(d,l)=>(by(d.subjects,l.subject_id)?.name||'Dars')+(l.kind?' ('+KIND_UZ[l.kind]+')':'');
 const isToday=l=>dayKey(l.starts)===dayKey(Date.now());
-/* haftalik jadval (guruh bo'yicha). Ma'ruzada boshqa guruhlar ham ko'rsatiladi */
-function ttGrid(d,gid){
-  const cell={};
-  for(let day=1;day<=6;day++)planFor(day).filter(p=>p.groups.includes(+gid)).forEach(p=>{cell[(day-1)+'_'+p.slot]=p});
-  const rows=[];for(let s=1;s<=8;s++){if(![0,1,2,3,4,5].some(dd=>cell[dd+'_'+s]))continue;
-    rows.push([`<b>${s}</b><br><span class="muted sm">${SLOTS[s]}</span>`,...[0,1,2,3,4,5].map(dd=>{const c=cell[dd+'_'+s];if(!c)return '';
-      const others=c.groups.length>1?`<br><span class="tag n">oqim: ${c.groups.map(g=>by(d.groups,g)?.code.replace('-26','')).join(' + ')}</span>`:'';
-      return `<div class="slot"><b>${esc(SUBJECT_NAMES[c.sub])}</b> <span class="muted">${KIND_UZ[c.kind]}</span><br><span class="sm muted">${esc(d.users.find(u=>u.login===c.tch)?.name)} · ${esc(c.room)}</span>${others}</div>`})])}
-  return table(['Juft.',...DAYS.slice(1,7)],rows);
+/* haftalik jadval — edupage ko'rinishida: kun qatorlari × juftlik ustunlari, fan bo'yicha rangli kataklar */
+function ttGrid(d, gid) {
+  const cell = {};
+  for (let day = 1; day <= 6; day++) planFor(day).filter(p => p.groups.includes(+gid)).forEach(p => { cell[day + '_' + p.slot] = p; });
+  const gcode = by(d.groups, +gid)?.code || '';
+  const head = [1, 2, 3, 4, 5, 6, 7, 8].map(s => `<th class="tth"><b>${s}.</b><span>${SLOTS[s]}</span></th>`).join('');
+  const rows = [1, 2, 3, 4, 5, 6].map(day => `<tr><th class="ttd">${DAYS[day]}</th>${[1, 2, 3, 4, 5, 6, 7, 8].map(s => {
+    const c = cell[day + '_' + s]; if (!c) return '<td></td>';
+    const t = (d.users.find(u => u.login === c.tch)?.name || '').toUpperCase();
+    const st = c.groups.length > 1 ? `<em>oqim: ${c.groups.map(g => by(d.groups, g)?.code.replace('-26', '')).join(' + ')}</em>` : '';
+    return `<td><div class="tc s-${c.sub} k-${c.kind}"><i>${esc(t)}</i><b>${esc(SUBJECT_NAMES[c.sub])} (${KIND_UZ[c.kind]})</b>${st}<span>${esc(c.room)}</span></div></td>`;
+  }).join('')}</tr>`).join('');
+  return `<div class="tw"><table class="tt"><thead><tr><th></th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }

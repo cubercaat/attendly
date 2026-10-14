@@ -1,88 +1,170 @@
 const U = guard(['student']);
 if (U) {
-  let tab = 'scan', ctx = null, lastTok = sessionStorage.getItem('stu_last') || '';
+  let tab = 'scan', ctx = null, facing = 'environment', lastTok = sessionStorage.getItem('stu_last') || '';
   const TABS = [['scan', 'Skanerlash'], ['week', 'Jadval'], ['history', 'Davomatim'], ['inbox', 'Xabarlar'], ['chat', 'Chat'], ['me', 'Profil']];
   const DIST = { in: 35, near: 90, far: 4200 };
+  const cur = () => by(DB.get().users, U.id);
+  const faceKey = 'face_ok_' + U.id;
+  const log = (d, text, ok) => audit(d, `${U.name}: ${text}`, ok);
+  const rnd = a => a[Math.floor(Math.random() * a.length)];
+
+  /* ishonchli qurilma: ro'yxatdan o'tgan telefon. Birinchi kirgan qurilma avtomatik ishonchli bo'ladi */
+  function devices(d) { d.devices = d.devices || {}; return d.devices[U.id] = d.devices[U.id] || []; }
+  function trusted() {
+    const d = DB.get(); d.devices = d.devices || {};
+    if (by(d.users, U.id).enrolled && d.devices[U.id] === undefined) { d.devices[U.id] = [deviceId()]; DB.save(d); }
+    return (d.devices[U.id] || []).includes(deviceId());
+  }
+  const faceOK = () => sessionStorage.getItem(faceKey) == '1';
 
   function draw() {
+    Cam.stop();
     shell(U, 'Talaba paneli', tabLabel(U, TABS), tab);
     $$('.tab').forEach(b => b.onclick = () => { tab = b.dataset.t; ctx = null; draw(); });
     ({ scan, week, history, inbox: (d, el) => renderInbox(el, U), chat: (d, el) => renderChat(el, U), me: profile })[tab](DB.get(), $('#view'));
   }
-  const log = (d, text, ok) => audit(d, `${U.name}: ${text}`, ok);
 
+  /* ---------------------------------------------------------------- skaner */
   function scan(d, el) {
     if (ctx) return verify(d, el);
-    el.innerHTML = `<div class="card"><h2>Davomatni belgilash</h2>
-      <p class="muted sm">Haqiqiy ilovada kamera QR ni o'qiydi. Demoda ikki yo'l bor:</p>
-      <p><button class="btn p" id="cam">📷 Kamera bilan skanerlash (o'qituvchi tabidagi QR)</button></p>
-      <label>Yoki kodni qo'lda kiriting (eski kodni sinab ko'rish uchun)<input id="code" class="mono" value="${esc(lastTok)}" placeholder="1.123456.abcd"></label>
-      <button class="btn" id="go">Tekshirish</button> <p class="sm muted" id="msg" style="margin-top:10px"></p></div>
-      <div class="card"><h3>Aldab ko'rish</h3><p class="sm muted">Kamera bilan bir marta skanerlang, so'ng 15 soniya kuting va «Tekshirish» ni bosing — kod eskirgan bo'ladi. Uzoqlikni «Uyda» deb tanlab ko'ring — GPS to'sadi.</p></div>`;
-    const msg = t => $('#msg').textContent = t;
-    $('#cam').onclick = () => {
+    const me = by(d.users, U.id);
+    if (!me.enrolled) return el.innerHTML = `<div class="card"><h2>Ro'yxatdan o'tish kerak</h2><p class="muted">Davomat belgilash uchun avval ro'yxatdan o'ting: yuzingiz bir marta olinadi va telefoningiz biriktiriladi.</p>
+      <button class="btn p" id="gp">Profilga o'tish</button></div>`, $('#gp').onclick = () => { tab = 'me'; draw(); };
+    if (!trusted() && !faceOK()) return gate(d, el);
+    scanner(el);
+  }
+
+  /* yangi qurilma (masalan, do'stning telefoni): yuz + liveness tekshiruvi */
+  function gate(d, el) {
+    const hasT = !!(d.faces || {})[U.id];
+    el.innerHTML = `<div class="card"><h2>Yangi qurilma</h2>
+      <p class="muted">Bu telefon sizning akkauntingizga biriktirilmagan. Davomat belgilashdan oldin yuzingiz tekshiriladi: kamera sizdan <b>chapga yoki o'ngga burilishni</b> so'raydi — shunda rasm ko'rsatib aldab bo'lmaydi.</p>
+      ${hasT ? '<button class="btn p" id="gf">Yuzni tekshirish</button>' : `<p class="tag warn">Akkauntda yuz shabloni yo'q — avval asosiy telefonda «Profil» orqali yuzni ro'yxatga oling.</p>`}
+      <p class="sm" id="gm"></p></div>`;
+    if (!hasT) return;
+    $('#gf').onclick = async () => {
+      let r;
+      try { r = await Face.run(el, ['center', rnd(['left', 'right'])], 'Yuzni tekshirish'); }
+      catch (e) { draw(); return toast('Kamera ochilmadi — brauzerda kameraga ruxsat bering'); }
+      const d = DB.get(), t = d.faces[U.id];
+      const sim = Face.cos(r.vecs[0], t), live = Face.distinct(r.vecs);
+      if (!live) { log(d, "yuz tekshiruvi rad: jonli yuz emas (rasm bo'lishi mumkin)", false); DB.save(d); draw(); return toast("❌ Jonli yuz aniqlanmadi (rasm ko'rsatilgan bo'lishi mumkin)"); }
+      if (sim < 0.6) { log(d, `yuz tekshiruvi rad: yuz mos kelmadi (${sim.toFixed(2)})`, false); DB.save(d); draw(); return toast('❌ Yuz mos kelmadi — bu sizning akkauntingiz emas'); }
+      sessionStorage.setItem(faceKey, '1'); log(d, `yangi qurilmada yuz tekshiruvidan o'tdi (${sim.toFixed(2)})`, true); DB.save(d); draw(); toast('✅ Yuz tasdiqlandi');
+    };
+  }
+
+  /* doim ochiq kamera */
+  function scanner(el) {
+    el.innerHTML = `<div class="card" style="padding:12px"><div id="vf" style="position:relative;max-width:420px;margin:auto;aspect-ratio:3/4;background:#000;border-radius:14px;overflow:hidden">
+        <video id="sv" style="width:100%;height:100%;object-fit:cover"></video>
+        <div class="vfm"><i></i><i></i><i></i><i></i></div><div class="vfl"></div>
+        <div id="sm" style="position:absolute;left:0;right:0;bottom:0;padding:10px;text-align:center;color:#fff;font-size:13px;background:linear-gradient(transparent,rgba(0,0,0,.65))">QR kodni ramka ichiga keltiring</div></div>
+      <div class="row" style="justify-content:center;margin-top:10px;max-width:420px;margin-inline:auto">
+        <button class="btn" id="flip">🔄 Kamerani almashtirish</button></div>
+      <p class="sm muted" style="text-align:center;margin:8px 0 0">Faqat jonli kamera qabul qilinadi — galereya yoki skrinshot o'tmaydi</p>
+      <details style="max-width:420px;margin:12px auto 0"><summary class="sm muted" style="cursor:pointer">Qo'lda kiritish / demo</summary>
+        <label style="margin-top:10px">Kod (eski kodni sinab ko'rish uchun)<input id="code" class="mono" value="${esc(lastTok)}" placeholder="1.123456.abcd"></label>
+        <button class="btn" id="go">Tekshirish</button> <button class="btn" id="live">O'qituvchi QR ekranini avtomatik o'qish</button>
+        <p class="sm muted" style="margin-top:8px">Kamera bilan bir marta skanerlang, so'ng 15 soniya kuting va «Tekshirish» ni bosing — kod eskirgan bo'ladi. Uzoqlikni «Uyda» deb tanlab ko'ring — GPS to'sadi.</p></details></div>`;
+    const v = $('#sv'), msg = t => { const m = $('#sm'); if (m) m.textContent = t; };
+    const resume = (ms = 1800) => setTimeout(() => { if ($('#sv') && !ctx) { msg('QR kodni ramka ichiga keltiring'); Cam.scan(v, handle); } }, ms);
+    function handle(code) {
+      let tok = String(code).trim(); const m = tok.match(/\/s\/([^/?#\s]+)/); if (m) tok = m[1];
+      lastTok = tok; sessionStorage.setItem('stu_last', tok);
+      const err = start(tok);
+      if (err) { msg('❌ ' + err); resume(); }
+    }
+    const open = async () => {
+      try { await Cam.open(v, facing); msg('QR kodni ramka ichiga keltiring'); Cam.scan(v, handle); }
+      catch (e) { msg("Kamera ochilmadi. Brauzerda kameraga ruxsat bering."); }
+    };
+    open();
+    $('#flip').onclick = () => { facing = facing == 'environment' ? 'user' : 'environment'; open(); };
+    $('#go').onclick = () => { lastTok = $('#code').value; sessionStorage.setItem('stu_last', lastTok); const err = start(lastTok); if (err) msg('❌ ' + err); };
+    $('#live').onclick = () => {
       let q; try { q = JSON.parse(localStorage.getItem('attendly_live_qr')); } catch (e) {}
       if (!q) return msg("O'qituvchi QR ekrani ochiq emas. Boshqa tabda o'qituvchi bilan kirib dars oching.");
-      lastTok = q.token; sessionStorage.setItem('stu_last', lastTok); $('#code').value = lastTok; start(lastTok);
+      handle(q.token);
     };
-    $('#go').onclick = () => { lastTok = $('#code').value; sessionStorage.setItem('stu_last', lastTok); start(lastTok); };
-    function start(tok) {
-      const d = DB.get(), r = verifyToken(tok, d);
-      if (!by(d.users, U.id).enrolled) return msg("❌ Siz ro'yxatga olinmagansiz — «Profil» bo'limida ro'yxatdan o'ting yoki admin ro'yxatga olsin");
-      if (r.err) { log(d, 'QR rad etildi — ' + r.err, false); DB.save(d); return msg('❌ ' + r.err); }
-      const l = r.lesson;
-      if (!lessonGroups(l).includes(U.group_id)) { log(d, 'boshqa guruh darsi', false); DB.save(d); return msg('❌ Bu dars sizning guruhingiz emas'); }
-      if (!l.open) return msg('❌ Bu dars davomati yopilgan');
-      const ex = d.attendance.find(a => a.lesson_id == l.id && a.user_id == U.id);
-      if (ex?.status == 'present') return msg('✅ Davomatingiz allaqachon belgilangan');
-      ctx = { lid: l.id, age: r.age, loc: 'in', method: 'passkey' }; draw();
-    }
+  }
+
+  /* QR ni tekshiradi; xato bo'lsa matn qaytaradi, aks holda tasdiqlash bosqichiga o'tadi */
+  function start(tok) {
+    const d = DB.get(), r = verifyToken(tok, d);
+    if (r.err) { log(d, 'QR rad etildi — ' + r.err, false); DB.save(d); return r.err; }
+    const l = r.lesson;
+    if (!lessonGroups(l).includes(U.group_id)) { log(d, 'boshqa guruh darsi', false); DB.save(d); return 'Bu dars sizning guruhingiz emas'; }
+    if (l.closed) return 'Bu dars davomati yopilgan';
+    const ex = d.attendance.find(a => a.lesson_id == l.id && a.user_id == U.id);
+    if (ex?.status == 'present') return 'Davomatingiz allaqachon belgilangan';
+    Cam.stop(); ctx = { lid: l.id, age: r.age }; draw(); return null;
   }
 
   function verify(d, el) {
-    const l = by(d.lessons, ctx.lid), room = by(d.rooms, l.room_id);
+    const l = by(d.lessons, ctx.lid), room = by(d.rooms, l.room_id), tr_ = trusted();
     el.innerHTML = `<div class="card"><h2>${esc(lessonName(d, l))}</h2>
       <p class="sm muted">${esc(room?.name)} · ${l.pair}-juftlik · QR yoshi ${ctx.age}s ✅</p>
       <ol class="steps"><li>✅ <span>QR kod to'g'ri va yangi</span></li>
       <li>📍 <span>Joylashuv (GPS) — demo uchun tanlang:<br>
         <select id="loc"><option value="in">Auditoriyada (~35 m)</option><option value="near">Koridorda (~90 m)</option><option value="far">Uyda (~4 km)</option></select></span></li>
-      <li>🔐 <span>Shaxsni tasdiqlash:<br><select id="meth"><option value="passkey">Passkey (Face ID / barmoq izi)</option><option value="face">Yuz tanish + liveness</option><option value="friend">Do'stimning yuzi (aldash)</option></select></span></li></ol>
+      <li>🔐 <span>${tr_ ? "Telefon Face ID / barmoq izi (passkey) — yuz kamerasi kerak emas" : "Yuz tekshiruvi bu sessiyada o'tgan"}</span></li></ol>
       <button class="btn p" id="ok">Tasdiqlash</button> <button class="btn" id="no">Bekor</button><p class="sm" id="res" style="margin-top:12px"></p></div>`;
     $('#no').onclick = () => { ctx = null; draw(); };
     $('#ok').onclick = async () => {
-      const loc = $('#loc').value, meth = $('#meth').value, res = $('#res'), btn = $('#ok'); btn.disabled = true;
+      const loc = $('#loc').value, meth = tr_ ? 'passkey' : 'face', res = $('#res'), btn = $('#ok'); btn.disabled = true;
       const fail = (t, why) => { const d = DB.get(); log(d, why, false); DB.save(d); res.textContent = '❌ ' + t; btn.disabled = false; };
       const d0 = DB.get();
       if (DIST[loc] > by(d0.rooms, by(d0.lessons, ctx.lid).room_id).radius) return fail(`Siz auditoriyadan uzoqdasiz (~${DIST[loc]} m)`, `geofence rad — ${DIST[loc]} m`);
-      res.textContent = meth == 'passkey' ? '🔐 Face ID tekshirilmoqda…' : '🙂 Markazga qarang… chapga buriling…';
-      await new Promise(r => setTimeout(r, 1300));
-      if (meth == 'friend') return fail("Yuz mos kelmadi — bu sizning akkauntingiz emas", 'face_mismatch');
+      res.textContent = '🔐 Face ID tekshirilmoqda…';
+      await new Promise(r => setTimeout(r, 1100));
       const d = DB.get(), lesson = by(d.lessons, ctx.lid);
-      if (!lesson.open) return fail('Davomat oynasi yopildi', 'dars yopiq');
+      if (lesson.closed) return fail('Davomat oynasi yopildi', 'dars yopiq');
       const dev = deviceId(), shared = d.attendance.some(a => a.lesson_id == lesson.id && a.device == dev && a.user_id != U.id);
       let x = d.attendance.find(a => a.lesson_id == lesson.id && a.user_id == U.id);
       if (!x) d.attendance.push(x = { lesson_id: lesson.id, user_id: U.id });
       Object.assign(x, { status: 'present', method: meth, distance: DIST[loc], device: dev, flagged: shared, at: Date.now() });
       log(d, `davomat belgilandi (${meth}, ${DIST[loc]} m)${shared ? ' ⚠ umumiy qurilma' : ''}`, true);
       DB.save(d);
-      res.innerHTML = '✅ <b>Davomatingiz belgilandi</b>' + (shared ? '<br>⚠ Bu qurilmadan boshqa talaba ham belgilangan — o\'qituvchiga belgi ketdi.' : '');
+      res.innerHTML = '✅ <b>Davomatingiz belgilandi</b>' + (shared ? "<br>⚠ Bu qurilmadan boshqa talaba ham belgilangan — o'qituvchiga belgi ketdi." : '');
       setTimeout(() => { ctx = null; tab = 'history'; draw(); }, 1500);
     };
   }
 
+  /* ---------------------------------------------------------------- boshqa bo'limlar */
   function week(d, el) { el.innerHTML = `<div class="card"><h2>${esc(by(d.groups, U.group_id)?.code)} — bu hafta</h2>${ttGrid(d, U.group_id)}</div>`; }
   function history(d, el) {
     const rows = d.attendance.filter(a => a.user_id == U.id).map(a => ({ a, l: by(d.lessons, a.lesson_id) })).filter(x => x.l).sort((p, q) => q.l.starts - p.l.starts);
     const p = rows.filter(x => x.a.status == 'present').length, pc = rows.length ? Math.round(p / rows.length * 100) : 0;
     el.innerHTML = `<div class="card"><h2>Davomat: ${pc}%</h2><div class="bar"><i style="width:${pc}%"></i></div><p class="sm muted">${p} / ${rows.length} dars</p></div>
       <div class="card">${table(['Sana', 'Fan', 'Juftlik', 'Holat', 'Usul'], rows.slice(0, 40).map(({ a, l }) =>
-        [fmtD(l.starts), esc(lessonName(d, l)), l.pair, statusTag(a.status), esc(a.method || '')]), 'Hali yozuv yo\'q')}</div>`;
+        [fmtD(l.starts), esc(lessonName(d, l)), l.pair, statusTag(a.status), esc(a.method || '')]), "Hali yozuv yo'q")}</div>`;
   }
+
+  async function register(el) {
+    let r;
+    try { r = await Face.run(el, ['center', ...rnd([['left', 'right'], ['right', 'left']])], "Ro'yxatdan o'tish: yuzni olish"); }
+    catch (e) { draw(); return toast('Kamera ochilmadi — brauzerda kameraga ruxsat bering'); }
+    if (!Face.distinct(r.vecs)) { draw(); return toast("❌ Kadrlar bir xil — jonli yuz emas. Qaytadan urinib ko'ring"); }
+    const d = DB.get(), u = by(d.users, U.id);
+    d.faces = d.faces || {}; d.faces[U.id] = r.vecs[0];
+    const list = devices(d); if (!list.includes(deviceId())) list.push(deviceId());
+    u.enrolled = true; audit(d, `${U.name}: ro'yxatdan o'tdi (yuz + passkey)`); DB.save(d); toast("Ro'yxatga olindingiz ✅"); draw();
+  }
+
   function profile(d, el) {
-    setTimeout(() => { const b = $('#enr'); if (b) b.onclick = () => { const d = DB.get(), u = by(d.users, U.id); u.enrolled = true; audit(d, `${U.name}: ro'yxatdan o'tdi (passkey)`); DB.save(d); toast("Ro'yxatga olindingiz ✅"); draw(); }; });
+    const me = by(d.users, U.id), hasT = !!(d.faces || {})[U.id], tr_ = trusted();
     el.innerHTML = `<div class="card"><h2>${esc(U.name)}</h2><p class="sm">Guruh: <b>${esc(by(d.groups, U.group_id)?.code)}</b></p>
-      <p class="sm">Biriktirilgan: ${by(d.users, U.id).enrolled ? '<span class="tag ok">Passkey</span> <span class="tag ok">Yuz shabloni</span>' : `<span class="tag warn">Ro'yxatda emas</span> <button class="btn p sm" id="enr">Ro'yxatdan o'tish (passkey yaratish)</button>`}</p>
+      <p class="sm">Biriktirilgan: ${me.enrolled ? `<span class="tag ok">Passkey</span> ${hasT ? '<span class="tag ok">Yuz shabloni</span>' : '<span class="tag warn">Yuz shabloni yo\'q</span>'}` : '<span class="tag warn">Ro\'yxatda emas</span>'}</p>
+      <p class="sm">Bu qurilma: ${tr_ ? '<span class="tag ok">Ishonchli</span>' : '<span class="tag warn">Yangi qurilma</span>'}</p>
+      <p><button class="btn p" id="reg">${hasT ? 'Yuz shablonini yangilash' : "Ro'yxatdan o'tish (yuzni olish)"}</button>
+      ${me.enrolled && !hasT ? '<button class="btn" id="nocam">Kamerasiz ro\'yxatdan o\'tish (demo)</button>' : ''}
+      ${tr_ ? '<button class="btn" id="untrust">Bu qurilmani chiqarish (demo: do\'stning telefoni)</button>' : ''}</p>
+      <p class="sm muted">Yuz tekshiruvi faqat ro'yxatdan o'tishda va yangi (biriktirilmagan) qurilmada so'raladi. Biriktirilgan telefonda davomat telefonning o'z Face ID / barmoq izi bilan, yuz kamerasisiz belgilanadi.</p>
       <p class="sm muted">Qurilma ID: <span class="mono">${deviceId()}</span> — bir brauzerdan ikki talaba belgilansa, o'qituvchiga ogohlantirish boradi.</p></div>`;
+    $('#reg').onclick = () => register(el);
+    if ($('#nocam')) $('#nocam').onclick = () => { const d = DB.get(); by(d.users, U.id).enrolled = true; DB.save(d); draw(); };
+    if ($('#untrust')) $('#untrust').onclick = () => { const d = DB.get(); d.devices[U.id] = (d.devices[U.id] || []).filter(x => x != deviceId()); sessionStorage.removeItem(faceKey); DB.save(d); toast('Qurilma chiqarildi — endi bu "yangi qurilma"'); draw(); };
   }
   draw();
 }

@@ -219,6 +219,38 @@
   PHR.push(["ni o'zgartiring.", 'accordingly.', 'соответствующим образом.'], ['FastAPI va PostgreSQL', 'FastAPI and PostgreSQL', 'FastAPI и PostgreSQL'], ["Aldab ko'rish", 'Try to cheat', 'Попробуйте обмануть'], ['Matematika 1', 'Mathematics 1', 'Математика 1'], ['Ingliz tili 1', 'English 1', 'Английский 1'], ['Fizika 1', 'Physics 1', 'Физика 1'], ['Dasturlash', 'Programming', 'Программирование'],
     ["(ma'ruza)", '(lecture)', '(лекция)'], ['(amaliyot)', '(practice)', '(практика)'], ["guruh ro'yxatga olindi", 'groups registered', 'групп отмечено']);
 
+  /* kamera skaner va yuz tekshiruvi */
+  EXACT.push(['Yangi qurilma', 'New device', 'Новое устройство'], ['Ishonchli', 'Trusted', 'Доверенное'], ['Yuzni tekshirish', 'Verify face', 'Проверить лицо'], ["Profilga o'tish", 'Go to profile', 'Перейти в профиль']);
+  PHR.push(
+    ["Ro'yxatdan o'tish kerak", 'Registration required', 'Нужна регистрация'],
+    ["Davomat belgilash uchun avval ro'yxatdan o'ting: yuzingiz bir marta olinadi va telefoningiz biriktiriladi.", 'To mark attendance, register first: your face is captured once and your phone is linked.', 'Чтобы отмечать посещаемость, сначала зарегистрируйтесь: лицо снимается один раз и телефон привязывается.'],
+    ["Bu telefon sizning akkauntingizga biriktirilmagan. Davomat belgilashdan oldin yuzingiz tekshiriladi: kamera sizdan", 'This phone is not linked to your account. Before marking attendance your face is verified: the camera will ask you', 'Этот телефон не привязан к вашему аккаунту. Перед отметкой проверяется ваше лицо: камера попросит вас'],
+    ["chapga yoki o'ngga burilishni", 'to turn left or right', 'повернуть голову влево или вправо'],
+    ["so'raydi — shunda rasm ko'rsatib aldab bo'lmaydi.", '— so a photo cannot fool it.', '— так что фото не обмануть.'],
+    ["Akkauntda yuz shabloni yo'q — avval asosiy telefonda «Profil» orqali yuzni ro'yxatga oling.", 'The account has no face template — first register your face on your main phone via «Profile».', 'В аккаунте нет шаблона лица — сначала зарегистрируйте лицо на основном телефоне через «Профиль».'],
+    ['Kamera ochilmadi — brauzerda kameraga ruxsat bering', 'Camera did not open — allow camera access in the browser', 'Камера не открылась — разрешите доступ к камере в браузере'],
+    ["Kamera ochilmadi. Brauzerda kameraga ruxsat bering yoki galereyadan tanlang.", 'Camera did not open. Allow camera access in the browser.', 'Камера не открылась. Разрешите доступ к камере в браузере.'],
+    ['QR kodni ramka ichiga keltiring', 'Bring the QR code inside the frame', 'Поместите QR-код в рамку'], ['Kamerani almashtirish', 'Switch camera', 'Переключить камеру'],
+    ["Faqat jonli kamera qabul qilinadi — galereya yoki skrinshot o'tmaydi", 'Only the live camera is accepted — gallery images and screenshots do not work', 'Принимается только живая камера — галерея и скриншоты не подходят'],
+    ["Qo'lda kiritish / demo", 'Manual entry / demo', 'Ручной ввод / демо'], ["Kod (eski kodni sinab ko'rish uchun)", 'Code (to try an old code)', 'Код (чтобы проверить старый код)'],
+    ["O'qituvchi QR ekranini avtomatik o'qish", "Auto-read the teacher's QR screen", 'Автоматически считать экран QR преподавателя'],
+    ["Telefon Face ID / barmoq izi (passkey) — yuz kamerasi kerak emas", "The phone's Face ID / fingerprint (passkey) — no face camera needed", 'Face ID / отпечаток телефона (passkey) — камера лица не нужна'],
+    ["Yuz tekshiruvi bu sessiyada o'tgan", 'Face check passed in this session', 'Проверка лица пройдена в этой сессии'],
+    ["Jonli yuz aniqlanmadi (rasm ko'rsatilgan bo'lishi mumkin)", 'No live face detected (a photo may have been shown)', 'Живое лицо не обнаружено (возможно, показано фото)'],
+    ['✅ Yuz tasdiqlandi', '✅ Face verified', '✅ Лицо подтверждено'],
+    ["yangi qurilmada yuz tekshiruvidan o'tdi", 'passed the face check on a new device', 'прошёл проверку лица на новом устройстве'],
+    ["yuz tekshiruvi rad: jonli yuz emas (rasm bo'lishi mumkin)", 'face check rejected: not a live face (may be a photo)', 'проверка лица отклонена: не живое лицо (возможно, фото)'],
+    ['yuz tekshiruvi rad: yuz mos kelmadi', 'face check rejected: face does not match', 'проверка лица отклонена: лицо не совпало'],
+    ["Ro'yxatdan o'tish: yuzni olish", 'Registration: capture your face', 'Регистрация: съёмка лица'], ["Ro'yxatdan o'tish (yuzni olish)", 'Register (capture face)', 'Зарегистрироваться (снять лицо)'],
+    ["Kadrlar bir xil — jonli yuz emas. Qaytadan urinib ko'ring", 'Frames are identical — not a live face. Try again', 'Кадры одинаковые — не живое лицо. Попробуйте ещё раз'],
+    ["ro'yxatdan o'tdi (yuz + passkey)", 'registered (face + passkey)', 'зарегистрировался (лицо + passkey)'],
+    ["Yuz shabloni yo'q", 'No face template', 'Нет шаблона лица'], ['Bu qurilma:', 'This device:', 'Это устройство:'],
+    ['Yuz shablonini yangilash', 'Update face template', 'Обновить шаблон лица'], ["Kamerasiz ro'yxatdan o'tish (demo)", 'Register without camera (demo)', 'Регистрация без камеры (демо)'],
+    ["Bu qurilmani chiqarish (demo: do'stning telefoni)", "Remove this device (demo: a friend's phone)", 'Убрать это устройство (демо: телефон друга)'],
+    ['Qurilma chiqarildi — endi bu "yangi qurilma"', 'Device removed — it is now a "new device"', 'Устройство убрано — теперь это «новое устройство»'],
+    ["Yuz tekshiruvi faqat ro'yxatdan o'tishda va yangi (biriktirilmagan) qurilmada so'raladi. Biriktirilgan telefonda davomat telefonning o'z Face ID / barmoq izi bilan, yuz kamerasisiz belgilanadi.", "The face check is only asked at registration and on a new (unlinked) device. On a linked phone, attendance is marked with the phone's own Face ID / fingerprint, without the face camera.", 'Проверка лица запрашивается только при регистрации и на новом (непривязанном) устройстве. На привязанном телефоне посещаемость отмечается через Face ID / отпечаток телефона, без камеры лица.'],
+    ["To'g'ri qarang", 'Look straight', 'Смотрите прямо'], ['Chapga buriling', 'Turn left', 'Поверните налево'], ["O'ngga buriling", 'Turn right', 'Поверните направо']);
+
   const REGEX = [
     [/([0-9]+)-para/, ['pair $1', '$1-я пара']],
     [/^(\d+) \/ (\d+) keldi$/, ['$1 / $2 present', '$1 / $2 пришли']],
