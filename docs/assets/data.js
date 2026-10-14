@@ -73,7 +73,7 @@ function seed() {
   const teacherId = l => users.find(u => u.login === l).id;
 
   const groups = ['CYB1-26', 'CYB2-26', 'CYB3-26', 'CYB4-26'].map((c, i) => ({ id: i + 1, code: c, year: 2026, invite: 'inv' + (i + 1) + 'x' }));
-  const rooms = ROOM_NAMES.map((n, i) => ({ id: i + 1, name: n, building: n == 'Prerecorded' ? 'Onlayn' : /LAB|Chem/.test(n) ? 'Laboratoriya' : /Hall|Library/.test(n) ? 'Zallar' : 'Asosiy bino', radius: 120 }));
+  const rooms = ROOM_NAMES.map((n, i) => ({ id: i + 1, name: n, building: n == 'Prerecorded' ? 'Onlayn' : /LAB|Chem/.test(n) ? 'Laboratoriya' : /Hall|Library/.test(n) ? 'Zallar' : 'Asosiy bino', radius: 120, geo: n == 'BLUE HALL' ? { required: true, corners: [{ lat: 41.26478, lng: 69.21612 }, { lat: 41.26478, lng: 69.21648 }, { lat: 41.26442, lng: 69.21648 }, { lat: 41.26442, lng: 69.21612 }] } : { required: false, corners: [] } }));
   const roomId = n => rooms.find(x => x.name === n).id;
   const subjects = Object.keys(SUBJECT_NAMES).map((k, i) => ({ id: i + 1, key: k, name: SUBJECT_NAMES[k] }));
   const subjId = k => subjects.find(s => s.key === k).id;

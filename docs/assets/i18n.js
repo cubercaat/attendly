@@ -251,6 +251,37 @@
     ["Yuz tekshiruvi faqat ro'yxatdan o'tishda va yangi (biriktirilmagan) qurilmada so'raladi. Biriktirilgan telefonda davomat telefonning o'z Face ID / barmoq izi bilan, yuz kamerasisiz belgilanadi.", "The face check is only asked at registration and on a new (unlinked) device. On a linked phone, attendance is marked with the phone's own Face ID / fingerprint, without the face camera.", 'Проверка лица запрашивается только при регистрации и на новом (непривязанном) устройстве. На привязанном телефоне посещаемость отмечается через Face ID / отпечаток телефона, без камеры лица.'],
     ["To'g'ri qarang", 'Look straight', 'Смотрите прямо'], ['Chapga buriling', 'Turn left', 'Поверните налево'], ["O'ngga buriling", 'Turn right', 'Поверните направо']);
 
+  /* joylashuv (4 burchak) */
+  EXACT.push(['Talab qilinmaydi', 'Not required', 'Не требуется'], ['Joylashuv', 'Location', 'Геопозиция'], ['Joylashuvni sozlash', 'Set up location', 'Настроить геопозицию'],
+    ['4 burchak ✓', '4 corners ✓', '4 угла ✓'], ['Burchaklar kiritilmagan', 'Corners not entered', 'Углы не введены'], ['Kvadrat yaratish', 'Create square', 'Создать квадрат'],
+    ['Burchaklarni tozalash', 'Clear corners', 'Очистить углы'], ['📍 Hozirgi joydan', '📍 From my position', '📍 Из текущей позиции'],
+    ['Hammasida yoqish', 'Enable for all', 'Включить для всех'], ["Hammasida o'chirish", 'Disable for all', 'Выключить для всех']);
+  PHR.push(
+    ['Xonalar va joylashuv', 'Rooms and location', 'Аудитории и геопозиция'], ['— joylashuv', '— location', '— геопозиция'],
+    ['Davomat belgilashda joylashuv talab qilinsin', 'Require location when marking attendance', 'Требовать геопозицию при отметке посещаемости'],
+    ["Xonaning 4 ta burchagini belgilang (aylanib chiqish tartibida). Talaba shu to'rtburchak ichida bo'lishi kerak. Har burchakda turib «Hozirgi joydan» ni bosing yoki koordinatani qo'lda kiriting.",
+      'Mark the 4 corners of the room (in order around it). The student must be inside this quadrilateral. Stand at each corner and press «From my position», or enter the coordinates by hand.',
+      'Отметьте 4 угла аудитории (по кругу). Студент должен находиться внутри этого четырёхугольника. Встаньте в каждый угол и нажмите «Из текущей позиции» или введите координаты вручную.'],
+    ['-burchak', 'th corner', '-й угол'], ['Kenglik (lat)', 'Latitude', 'Широта'], ['Uzunlik (lng)', 'Longitude', 'Долгота'],
+    ["Yoki: hozirgi joy markaz bo'lib, tomoni (m)", 'Or: current position as the centre, side length (m)', 'Или: текущая позиция как центр, сторона (м)'],
+    ["Burchaklar to'liq kiritilgach xonaning shakli shu yerda ko'rinadi.", 'The shape of the room appears here once all corners are entered.', 'Форма аудитории появится здесь, когда будут введены все углы.'],
+    ["Xaritada ko'rish ↗", 'View on map ↗', 'Показать на карте ↗'], ['Joylashuv aniqlanmoqda…', 'Getting location…', 'Определение геопозиции…'], ['Aniqlik ~', 'Accuracy ~', 'Точность ~'],
+    ["Joylashuvni aniqlab bo'lmadi — brauzerda ruxsat bering yoki koordinatani qo'lda kiriting", 'Could not get the location — allow it in the browser or enter the coordinates by hand', 'Не удалось определить геопозицию — разрешите доступ в браузере или введите координаты вручную'],
+    ["Joylashuvni aniqlab bo'lmadi — koordinatani qo'lda kiriting", 'Could not get the location — enter the coordinates by hand', 'Не удалось определить геопозицию — введите координаты вручную'],
+    ["Talab yoqilgan bo'lsa 4 ta burchakning hammasini kiriting", 'If the requirement is on, enter all 4 corners', 'Если требование включено, введите все 4 угла'],
+    ['Xona joylashuvi:', 'Room location:', 'Геопозиция аудитории:'], ['4 burchak, talab qilinadi', '4 corners, required', '4 угла, требуется'], ['talab qilinmaydi', 'not required', 'не требуется'],
+    ['Barcha xonalarda joylashuv talabi yoqildi', 'Location requirement enabled for all rooms', 'Требование геопозиции включено для всех аудиторий'],
+    ["Barcha xonalarda joylashuv talabi o'chirildi", 'Location requirement disabled for all rooms', 'Требование геопозиции выключено для всех аудиторий'],
+    ["Joylashuv (GPS): xonaning 4 burchagi ichida bo'lishingiz kerak", "Location (GPS): you must be inside the room's 4 corners", 'Геопозиция (GPS): вы должны быть внутри 4 углов аудитории'],
+    ["⚠ Xona chegarasi belgilanmagan — admin 4 burchakni kiritishi kerak", '⚠ The room boundary is not set — the admin must enter the 4 corners', '⚠ Граница аудитории не задана — администратор должен ввести 4 угла'],
+    ["Xona chegarasi belgilanmagan — admin 4 burchakni kiritishi kerak", 'The room boundary is not set — the admin must enter the 4 corners', 'Граница аудитории не задана — администратор должен ввести 4 угла'],
+    ['Joylashuv: bu xonada talab qilinmaydi', 'Location: not required in this room', 'Геопозиция: в этой аудитории не требуется'],
+    ['Haqiqiy GPS (telefon joylashuvi)', 'Real GPS (phone location)', 'Настоящий GPS (геопозиция телефона)'], ['Demo: xona ichida', 'Demo: inside the room', 'Демо: внутри аудитории'], ['Demo: xonadan tashqarida', 'Demo: outside the room', 'Демо: вне аудитории'],
+    ['Joylashuvga ruxsat bering (brauzer sozlamalarida)', 'Allow location access (in the browser settings)', 'Разрешите доступ к геопозиции (в настройках браузера)'],
+    ['GPS aniqligi past', 'GPS accuracy is low', 'Точность GPS низкая'], ['— ochiq joyga chiqing', '— go outside', '— выйдите на открытое место'],
+    ['joylashuv talab qilinmadi', 'location not required', 'геопозиция не требовалась'], ["geofence: burchaklar yo'q", 'geofence: no corners', 'геозона: нет углов'], ["joylashuv ruxsati yo'q", 'no location permission', 'нет доступа к геопозиции'],
+    ['geofence rad — xonadan', 'geofence rejected — outside the room by', 'геозона отклонила — вне аудитории на'], ['m tashqarida', 'm', 'м']);
+
   const REGEX = [
     [/([0-9]+)-para/, ['pair $1', '$1-я пара']],
     [/^(\d+) \/ (\d+) keldi$/, ['$1 / $2 present', '$1 / $2 пришли']],

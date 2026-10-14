@@ -73,3 +73,42 @@ function renderChat(el, U, startCh) {
   window.addEventListener('storage', chatHandler);
   paint();
 }
+
+/* ------------------------------------------------------------ joylashuv: xonaning 4 burchagi */
+const GEO_N = 4;
+const geoOf = r => (r.geo = r.geo || { required: false, corners: [] });
+const cornersOk = r => { const c = geoOf(r).corners; return c.length == GEO_N && c.every(p => isFinite(p.lat) && isFinite(p.lng) && p.lat !== null && p.lng !== null); };
+function polyCentroid(c) { return { lat: c.reduce((s, p) => s + p.lat, 0) / c.length, lng: c.reduce((s, p) => s + p.lng, 0) / c.length }; }
+/* nuqta ko'pburchak ichidami (ray casting) */
+function pointInPoly(lat, lng, c) {
+  let inside = false;
+  for (let i = 0, j = c.length - 1; i < c.length; j = i++) {
+    const yi = c[i].lat, xi = c[i].lng, yj = c[j].lat, xj = c[j].lng;
+    if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+/* ko'pburchak chegarasigacha masofa (metr); ichida bo'lsa 0 */
+function distToPolyM(lat, lng, c) {
+  if (pointInPoly(lat, lng, c)) return 0;
+  const k = Math.cos(lat * Math.PI / 180) * 111320, kl = 110540;
+  const P = c.map(p => [(p.lng - lng) * k, (p.lat - lat) * kl]);
+  let best = Infinity;
+  for (let i = 0; i < P.length; i++) {
+    const [ax, ay] = P[i], [bx, by_] = P[(i + 1) % P.length], dx = bx - ax, dy = by_ - ay, L = dx * dx + dy * dy;
+    const t = L ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)) : 0;
+    best = Math.min(best, Math.hypot(ax + t * dx, ay + t * dy));
+  }
+  return best;
+}
+/* markaz + tomon uzunligi (m) dan kvadrat burchaklari */
+function squareAround(lat, lng, side) {
+  const h = side / 2, dLat = h / 110540, dLng = h / (Math.cos(lat * Math.PI / 180) * 111320);
+  return [{ lat: lat + dLat, lng: lng - dLng }, { lat: lat + dLat, lng: lng + dLng }, { lat: lat - dLat, lng: lng + dLng }, { lat: lat - dLat, lng: lng - dLng }];
+}
+function getPosition() {
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error('nogeo'));
+    navigator.geolocation.getCurrentPosition(p => res({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }), e => rej(e), { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+  });
+}

@@ -102,20 +102,31 @@ if (U) {
   }
 
   function verify(d, el) {
-    const l = by(d.lessons, ctx.lid), room = by(d.rooms, l.room_id), tr_ = trusted();
+    const l = by(d.lessons, ctx.lid), room = by(d.rooms, l.room_id), tr_ = trusted(), geoReq = !!room && geoOf(room).required;
     el.innerHTML = `<div class="card"><h2>${esc(lessonName(d, l))}</h2>
       <p class="sm muted">${esc(room?.name)} · ${l.pair}-juftlik · QR yoshi ${ctx.age}s ✅</p>
       <ol class="steps"><li>✅ <span>QR kod to'g'ri va yangi</span></li>
-      <li>📍 <span>Joylashuv (GPS) — demo uchun tanlang:<br>
-        <select id="loc"><option value="in">Auditoriyada (~35 m)</option><option value="near">Koridorda (~90 m)</option><option value="far">Uyda (~4 km)</option></select></span></li>
+      <li>📍 <span>${geoReq ? (cornersOk(room) ? "Joylashuv (GPS): xonaning 4 burchagi ichida bo'lishingiz kerak" : "⚠ Xona chegarasi belgilanmagan — admin 4 burchakni kiritishi kerak") : "Joylashuv: bu xonada talab qilinmaydi"}
+        ${geoReq && cornersOk(room) ? `<br><select id="sim"><option value="real">Haqiqiy GPS (telefon joylashuvi)</option><option value="in">Demo: xona ichida</option><option value="out">Demo: xonadan tashqarida</option></select>` : ''}</span></li>
       <li>🔐 <span>${tr_ ? "Telefon Face ID / barmoq izi (passkey) — yuz kamerasi kerak emas" : "Yuz tekshiruvi bu sessiyada o'tgan"}</span></li></ol>
       <button class="btn p" id="ok">Tasdiqlash</button> <button class="btn" id="no">Bekor</button><p class="sm" id="res" style="margin-top:12px"></p></div>`;
     $('#no').onclick = () => { ctx = null; draw(); };
     $('#ok').onclick = async () => {
-      const loc = $('#loc').value, meth = tr_ ? 'passkey' : 'face', res = $('#res'), btn = $('#ok'); btn.disabled = true;
+      const meth = tr_ ? 'passkey' : 'face', res = $('#res'), btn = $('#ok'); btn.disabled = true;
       const fail = (t, why) => { const d = DB.get(); log(d, why, false); DB.save(d); res.textContent = '❌ ' + t; btn.disabled = false; };
-      const d0 = DB.get();
-      if (DIST[loc] > by(d0.rooms, by(d0.lessons, ctx.lid).room_id).radius) return fail(`Siz auditoriyadan uzoqdasiz (~${DIST[loc]} m)`, `geofence rad — ${DIST[loc]} m`);
+      let dist = null, pos = null;
+      if (geoReq) {
+        if (!cornersOk(room)) return fail("Xona chegarasi belgilanmagan — admin 4 burchakni kiritishi kerak", "geofence: burchaklar yo'q");
+        const sim = $('#sim').value, ct = polyCentroid(geoOf(room).corners);
+        try {
+          if (sim == 'in') pos = { lat: ct.lat, lng: ct.lng, acc: 8 };
+          else if (sim == 'out') pos = { lat: ct.lat + 0.045, lng: ct.lng, acc: 8 };
+          else { res.textContent = '📍 Joylashuv aniqlanmoqda…'; pos = await getPosition(); }
+        } catch (e) { return fail('Joylashuvga ruxsat bering (brauzer sozlamalarida)', "joylashuv ruxsati yo'q"); }
+        if (pos.acc > 100) return fail(`GPS aniqligi past (~${Math.round(pos.acc)} m) — ochiq joyga chiqing`, 'GPS aniqligi past');
+        dist = distToPolyM(pos.lat, pos.lng, geoOf(room).corners);
+        if (dist - Math.min(pos.acc, 100) > 0) return fail(`Siz auditoriyadan uzoqdasiz (~${Math.round(dist)} m)`, `geofence rad — xonadan ${Math.round(dist)} m tashqarida`);
+      }
       res.textContent = '🔐 Face ID tekshirilmoqda…';
       await new Promise(r => setTimeout(r, 1100));
       const d = DB.get(), lesson = by(d.lessons, ctx.lid);
@@ -123,8 +134,8 @@ if (U) {
       const dev = deviceId(), shared = d.attendance.some(a => a.lesson_id == lesson.id && a.device == dev && a.user_id != U.id);
       let x = d.attendance.find(a => a.lesson_id == lesson.id && a.user_id == U.id);
       if (!x) d.attendance.push(x = { lesson_id: lesson.id, user_id: U.id });
-      Object.assign(x, { status: 'present', method: meth, distance: DIST[loc], device: dev, flagged: shared, at: Date.now() });
-      log(d, `davomat belgilandi (${meth}, ${DIST[loc]} m)${shared ? ' ⚠ umumiy qurilma' : ''}`, true);
+      Object.assign(x, { status: 'present', method: meth, distance: dist, lat: pos?.lat, lng: pos?.lng, device: dev, flagged: shared, at: Date.now() });
+      log(d, `davomat belgilandi (${meth}${dist !== null ? ', ' + Math.round(dist) + ' m' : ', joylashuv talab qilinmadi'})${shared ? ' ⚠ umumiy qurilma' : ''}`, true);
       DB.save(d);
       res.innerHTML = '✅ <b>Davomatingiz belgilandi</b>' + (shared ? "<br>⚠ Bu qurilmadan boshqa talaba ham belgilangan — o'qituvchiga belgi ketdi." : '');
       setTimeout(() => { ctx = null; tab = 'history'; draw(); }, 1500);
